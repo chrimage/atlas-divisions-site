@@ -1,16 +1,19 @@
 ---
+import Navigation from '../components/Navigation.astro';
+
 export interface Props {
 	title: string;
 }
 
 const { title } = Astro.props;
+const currentPath = Astro.url.pathname;
 ---
 
 <!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="description" content="Atlas Divisions - Mapping Chaos. Building Resilience." />
+		<meta name="description" content="Atlas Divisions - Solutions That Outlast the Storm" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
@@ -20,7 +23,10 @@ const { title } = Astro.props;
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 	</head>
 	<body>
-		<slot />
+		<Navigation currentPath={currentPath} />
+		<div class="page-content">
+			<slot />
+		</div>
 	</body>
 </html>
 
@@ -53,6 +59,10 @@ const { title } = Astro.props;
 		color: var(--color-text);
 		line-height: 1.6;
 		font-size: 16px;
+	}
+
+	.page-content {
+		padding-top: 70px; /* Account for fixed navigation */
 	}
 
 	h1, h2, h3, h4, h5, h6 {

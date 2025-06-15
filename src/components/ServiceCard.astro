@@ -2,18 +2,34 @@
 export interface Props {
 	title: string;
 	description: string;
-	icon: string;
+	features: string[];
+	ctaText: string;
+	ctaLink: string;
+	isEmergency?: boolean;
 }
 
-const { title, description, icon } = Astro.props;
+const { title, description, features, ctaText, ctaLink, isEmergency = false } = Astro.props;
 ---
 
-<div class="service-card">
-	<div class="icon-container">
-		<span class="icon">{icon}</span>
+<div class={`service-card ${isEmergency ? 'emergency' : ''}`}>
+	<div class="card-header">
+		<h3 class="card-title">{title}</h3>
+		<p class="card-description">{description}</p>
 	</div>
-	<h3 class="card-title">{title}</h3>
-	<p class="card-description">{description}</p>
+	
+	<div class="features-list">
+		<ul>
+			{features.map(feature => (
+				<li>{feature}</li>
+			))}
+		</ul>
+	</div>
+	
+	<div class="card-footer">
+		<a href={ctaLink} class={`cta-button ${isEmergency ? 'emergency' : ''}`}>
+			{ctaText}
+		</a>
+	</div>
 </div>
 
 <style>
@@ -21,12 +37,19 @@ const { title, description, icon } = Astro.props;
 		background: rgba(26, 26, 26, 0.6);
 		border: 1px solid rgba(212, 175, 55, 0.2);
 		border-radius: 16px;
-		padding: 2.5rem;
-		text-align: center;
+		padding: 2rem;
 		transition: all 0.3s ease;
 		backdrop-filter: blur(10px);
 		position: relative;
 		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+	}
+
+	.service-card.emergency {
+		border-color: rgba(220, 20, 60, 0.4);
+		background: rgba(26, 26, 26, 0.8);
 	}
 
 	.service-card::before {
@@ -42,39 +65,30 @@ const { title, description, icon } = Astro.props;
 		pointer-events: none;
 	}
 
+	.service-card.emergency::before {
+		background: linear-gradient(135deg, rgba(220, 20, 60, 0.1) 0%, transparent 50%);
+	}
+
 	.service-card:hover {
 		transform: translateY(-8px);
 		border-color: rgba(212, 175, 55, 0.4);
 		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
 	}
 
+	.service-card.emergency:hover {
+		border-color: rgba(220, 20, 60, 0.6);
+	}
+
 	.service-card:hover::before {
 		opacity: 1;
 	}
 
-	.icon-container {
-		width: 80px;
-		height: 80px;
-		margin: 0 auto 1.5rem;
-		background: linear-gradient(135deg, var(--color-accent-gold), var(--color-accent-bronze));
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition: transform 0.3s ease;
-	}
-
-	.service-card:hover .icon-container {
-		transform: scale(1.1);
-	}
-
-	.icon {
-		font-size: 2rem;
-		filter: grayscale(1) brightness(0) invert(1);
+	.card-header {
+		margin-bottom: 1.5rem;
 	}
 
 	.card-title {
-		font-size: 1.3rem;
+		font-size: 1.4rem;
 		font-weight: 600;
 		color: var(--color-text);
 		margin-bottom: 1rem;
@@ -90,19 +104,77 @@ const { title, description, icon } = Astro.props;
 		z-index: 1;
 	}
 
+	.features-list {
+		flex-grow: 1;
+		margin-bottom: 2rem;
+	}
+
+	.features-list ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.features-list li {
+		color: var(--color-text-secondary);
+		font-size: 0.95rem;
+		line-height: 1.5;
+		margin-bottom: 0.8rem;
+		padding-left: 1.5rem;
+		position: relative;
+	}
+
+	.features-list li::before {
+		content: '✓';
+		position: absolute;
+		left: 0;
+		color: var(--color-accent-gold);
+		font-weight: bold;
+	}
+
+	.service-card.emergency .features-list li::before {
+		color: #dc143c;
+	}
+
+	.card-footer {
+		margin-top: auto;
+	}
+
+	.cta-button {
+		display: inline-block;
+		width: 100%;
+		padding: 0.8rem 1.5rem;
+		background: transparent;
+		color: var(--color-accent-gold);
+		border: 2px solid var(--color-accent-gold);
+		border-radius: 8px;
+		text-decoration: none;
+		font-weight: 600;
+		font-size: 0.95rem;
+		text-align: center;
+		transition: all 0.3s ease;
+		position: relative;
+		z-index: 1;
+	}
+
+	.cta-button.emergency {
+		color: #dc143c;
+		border-color: #dc143c;
+	}
+
+	.cta-button:hover {
+		background: var(--color-accent-gold);
+		color: var(--color-bg);
+	}
+
+	.cta-button.emergency:hover {
+		background: #dc143c;
+		color: var(--color-text);
+	}
+
 	@media (max-width: 768px) {
 		.service-card {
-			padding: 2rem 1.5rem;
-		}
-
-		.icon-container {
-			width: 70px;
-			height: 70px;
-			margin-bottom: 1rem;
-		}
-
-		.icon {
-			font-size: 1.8rem;
+			padding: 1.5rem;
 		}
 
 		.card-title {
@@ -111,6 +183,10 @@ const { title, description, icon } = Astro.props;
 
 		.card-description {
 			font-size: 0.95rem;
+		}
+
+		.features-list li {
+			font-size: 0.9rem;
 		}
 	}
 </style>

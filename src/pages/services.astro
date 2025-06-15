@@ -1,0 +1,395 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ServiceCard from '../components/ServiceCard.astro';
+---
+
+<Layout title="Services - Atlas Divisions">
+	<main>
+		<section class="hero-section">
+			<div class="container">
+				<div class="hero-content">
+					<h1>Our Services</h1>
+					<p class="hero-subtitle">Comprehensive solutions for complex challenges</p>
+				</div>
+			</div>
+		</section>
+
+		<section class="services-detail">
+			<div class="container">
+				<div class="services-grid">
+					<div class="service-detail">
+						<h2>Auto & Home Systems Repair</h2>
+						<p class="service-intro">
+							Practical, reliable repairs that last. From automotive diagnostics to home system 
+							troubleshooting—we fix it right the first time with transparent pricing and 
+							no-nonsense approach.
+						</p>
+						
+						<div class="service-features">
+							<h3>What We Cover</h3>
+							<ul>
+								<li>Automotive diagnostics and repair</li>
+								<li>Home electrical and plumbing systems</li>
+								<li>HVAC troubleshooting and maintenance</li>
+								<li>Appliance repair and optimization</li>
+								<li>Emergency repair services</li>
+							</ul>
+						</div>
+
+						<div class="pricing-info">
+							<h3>Pricing Approach</h3>
+							<p>
+								Transparent, upfront pricing with no hidden fees. Emergency calls available 
+								24/7 with clear emergency rates. We provide detailed estimates before work 
+								begins and guarantee our repairs.
+							</p>
+						</div>
+
+						<a href="#contact" class="service-cta">Request Repair Service</a>
+					</div>
+
+					<div class="service-detail">
+						<h2>Logistics & Adaptive Operations</h2>
+						<p class="service-intro">
+							Streamlined operations for small businesses and complex projects. We turn chaos 
+							into coordinated action with tailored solutions that scale with your needs.
+						</p>
+						
+						<div class="service-features">
+							<h3>Our Capabilities</h3>
+							<ul>
+								<li>Supply chain optimization</li>
+								<li>Crisis response planning</li>
+								<li>Operational efficiency audits</li>
+								<li>Project coordination and management</li>
+								<li>Scalable system design</li>
+							</ul>
+						</div>
+
+						<div class="case-studies">
+							<h3>Approach</h3>
+							<p>
+								Every organization is different. We start with a thorough assessment, 
+								identify bottlenecks and vulnerabilities, then design adaptive systems 
+								that improve efficiency while building resilience.
+							</p>
+						</div>
+
+						<a href="#contact" class="service-cta">Schedule Consultation</a>
+					</div>
+
+					<div class="service-detail">
+						<h2>AI Tools & Digital Infrastructure</h2>
+						<p class="service-intro">
+							Transparent AI integration that actually serves your needs. No black boxes, 
+							no vendor lock-in—just practical digital solutions that enhance human capability.
+						</p>
+						
+						<div class="service-features">
+							<h3>Services Include</h3>
+							<ul>
+								<li>Custom automation development</li>
+								<li>AI workflow integration</li>
+								<li>Digital infrastructure setup</li>
+								<li>Data analysis and reporting systems</li>
+								<li>Training and documentation</li>
+							</ul>
+						</div>
+
+						<div class="ai-philosophy">
+							<h3>Our AI Philosophy</h3>
+							<p>
+								AI should augment human judgment, not replace it. We implement AI tools 
+								with complete transparency about capabilities, limitations, and decision-making 
+								processes. You always maintain control and understanding.
+							</p>
+						</div>
+
+						<a href="#contact" class="service-cta">Explore AI Solutions</a>
+					</div>
+
+					<div class="service-detail emergency">
+						<h2>Emergency & Crisis Response</h2>
+						<p class="service-intro">
+							When things go wrong, you need someone who can think clearly under pressure. 
+							Available for urgent situations that require immediate adaptive response.
+						</p>
+						
+						<div class="service-features">
+							<h3>Emergency Services</h3>
+							<ul>
+								<li>24/7 emergency availability</li>
+								<li>Rapid assessment and triage</li>
+								<li>Multi-domain crisis management</li>
+								<li>Coordination with emergency services</li>
+								<li>Clear communication throughout crisis</li>
+							</ul>
+						</div>
+
+						<div class="emergency-info">
+							<h3>When to Call</h3>
+							<p>
+								System failures, operational crises, emergency repairs, or any situation 
+								where you need immediate expert assessment and adaptive response. We're 
+								equipped to handle complex, multi-faceted emergencies.
+							</p>
+						</div>
+
+						<a href="mailto:harley@atlasdivisions.com" class="service-cta emergency">Emergency Contact</a>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section class="contact-section">
+			<div class="container">
+				<div class="contact-content">
+					<h2>Ready to Get Started?</h2>
+					<p>Every challenge is unique. Let's discuss your specific situation and how we can help.</p>
+					<div class="contact-options">
+						<a href="mailto:harley@atlasdivisions.com" class="contact-button primary">
+							Email Harley Directly
+						</a>
+						<a href="#contact" class="contact-button secondary">
+							Fill Out Contact Form
+						</a>
+					</div>
+				</div>
+			</div>
+		</section>
+	</main>
+</Layout>
+
+<style>
+	.hero-section {
+		padding: 6rem 0 4rem;
+		background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-bg-secondary) 100%);
+		text-align: center;
+	}
+
+	.hero-content h1 {
+		font-size: clamp(2.5rem, 5vw, 4rem);
+		color: var(--color-text);
+		margin-bottom: 1rem;
+		font-weight: 800;
+	}
+
+	.hero-subtitle {
+		font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+		color: var(--color-accent-gold);
+		font-weight: 500;
+	}
+
+	.services-detail {
+		padding: 6rem 0;
+		background: var(--color-bg-secondary);
+	}
+
+	.services-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+		gap: 3rem;
+		margin-top: 2rem;
+	}
+
+	.service-detail {
+		background: rgba(26, 26, 26, 0.6);
+		border: 1px solid rgba(212, 175, 55, 0.2);
+		border-radius: 16px;
+		padding: 3rem;
+		backdrop-filter: blur(10px);
+	}
+
+	.service-detail.emergency {
+		border-color: rgba(220, 20, 60, 0.4);
+		background: rgba(26, 26, 26, 0.8);
+	}
+
+	.service-detail h2 {
+		font-size: 2rem;
+		color: var(--color-text);
+		margin-bottom: 1.5rem;
+		font-weight: 700;
+	}
+
+	.service-intro {
+		font-size: 1.1rem;
+		color: var(--color-text-secondary);
+		line-height: 1.7;
+		margin-bottom: 2rem;
+	}
+
+	.service-features,
+	.pricing-info,
+	.case-studies,
+	.ai-philosophy,
+	.emergency-info {
+		margin-bottom: 2rem;
+	}
+
+	.service-features h3,
+	.pricing-info h3,
+	.case-studies h3,
+	.ai-philosophy h3,
+	.emergency-info h3 {
+		font-size: 1.3rem;
+		color: var(--color-accent-gold);
+		margin-bottom: 1rem;
+		font-weight: 600;
+	}
+
+	.service-features ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.service-features li {
+		color: var(--color-text-secondary);
+		font-size: 1rem;
+		line-height: 1.6;
+		margin-bottom: 0.8rem;
+		padding-left: 1.5rem;
+		position: relative;
+	}
+
+	.service-features li::before {
+		content: '✓';
+		position: absolute;
+		left: 0;
+		color: var(--color-accent-gold);
+		font-weight: bold;
+	}
+
+	.service-detail.emergency .service-features li::before {
+		color: #dc143c;
+	}
+
+	.pricing-info p,
+	.case-studies p,
+	.ai-philosophy p,
+	.emergency-info p {
+		color: var(--color-text-secondary);
+		line-height: 1.6;
+	}
+
+	.service-cta {
+		display: inline-block;
+		padding: 1rem 2rem;
+		background: transparent;
+		color: var(--color-accent-gold);
+		border: 2px solid var(--color-accent-gold);
+		border-radius: 8px;
+		text-decoration: none;
+		font-weight: 600;
+		font-size: 1rem;
+		transition: all 0.3s ease;
+		margin-top: 1rem;
+	}
+
+	.service-cta.emergency {
+		color: #dc143c;
+		border-color: #dc143c;
+	}
+
+	.service-cta:hover {
+		background: var(--color-accent-gold);
+		color: var(--color-bg);
+	}
+
+	.service-cta.emergency:hover {
+		background: #dc143c;
+		color: var(--color-text);
+	}
+
+	.contact-section {
+		padding: 6rem 0;
+		background: var(--color-bg);
+		text-align: center;
+	}
+
+	.contact-content h2 {
+		font-size: 2.5rem;
+		color: var(--color-text);
+		margin-bottom: 1rem;
+		font-weight: 700;
+	}
+
+	.contact-content p {
+		font-size: 1.2rem;
+		color: var(--color-text-secondary);
+		margin-bottom: 2rem;
+	}
+
+	.contact-options {
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.contact-button {
+		display: inline-block;
+		padding: 1rem 2rem;
+		border-radius: 8px;
+		text-decoration: none;
+		font-weight: 600;
+		font-size: 1rem;
+		transition: all 0.3s ease;
+	}
+
+	.contact-button.primary {
+		background: var(--color-accent-gold);
+		color: var(--color-bg);
+	}
+
+	.contact-button.primary:hover {
+		background: transparent;
+		color: var(--color-accent-gold);
+		border: 2px solid var(--color-accent-gold);
+	}
+
+	.contact-button.secondary {
+		background: transparent;
+		color: var(--color-accent-teal);
+		border: 2px solid var(--color-accent-teal);
+	}
+
+	.contact-button.secondary:hover {
+		background: var(--color-accent-teal);
+		color: var(--color-bg);
+	}
+
+	@media (max-width: 768px) {
+		.hero-section {
+			padding: 4rem 0 3rem;
+		}
+
+		.services-detail {
+			padding: 4rem 0;
+		}
+
+		.services-grid {
+			grid-template-columns: 1fr;
+			gap: 2rem;
+		}
+
+		.service-detail {
+			padding: 2rem;
+		}
+
+		.contact-section {
+			padding: 4rem 0;
+		}
+
+		.contact-options {
+			flex-direction: column;
+			align-items: center;
+		}
+
+		.contact-button {
+			width: 100%;
+			max-width: 280px;
+		}
+	}
+</style>

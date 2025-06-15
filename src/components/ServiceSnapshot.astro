@@ -4,22 +4,59 @@ import ServiceCard from './ServiceCard.astro';
 
 <section class="services">
 	<div class="container">
-		<h2 class="section-title">Our Approach</h2>
+		<div class="section-header">
+			<h2>Core Services</h2>
+			<p>Adaptive solutions for complex challenges</p>
+		</div>
 		<div class="services-grid">
 			<ServiceCard 
-				title="Real-World Problem Solving"
-				description="Tackling complex challenges across mechanical, structural, and digital systems with practical, hands-on expertise."
-				icon="🔧"
+				title="Auto & Home Systems Repair"
+				description="Practical, reliable repairs that last. From automotive diagnostics to home system troubleshooting—we fix it right the first time."
+				features={[
+					"Transparent pricing guidelines",
+					"Emergency repair availability", 
+					"Long-term maintenance planning",
+					"No-nonsense diagnostics"
+				]}
+				ctaText="Request Repair Service"
+				ctaLink="#contact"
 			/>
 			<ServiceCard 
-				title="Adaptive Crisis Response"
-				description="Dynamic solutions that evolve with changing circumstances, ensuring resilience when it matters most."
-				icon="⚡"
+				title="Logistics & Adaptive Operations"
+				description="Streamlined operations for small businesses and complex projects. We turn chaos into coordinated action."
+				features={[
+					"Tailored logistics solutions",
+					"Crisis response planning",
+					"Operational efficiency audits",
+					"Scalable system design"
+				]}
+				ctaText="Schedule Consultation"
+				ctaLink="#contact"
 			/>
 			<ServiceCard 
-				title="Transparent AI Integration"
-				description="Leveraging AI capabilities with complete transparency about what is and isn't AI-assisted in our work."
-				icon="🤖"
+				title="AI Tools & Digital Infrastructure"
+				description="Transparent AI integration that actually serves your needs. No black boxes, no vendor lock-in—just practical digital solutions."
+				features={[
+					"Ethical AI implementation",
+					"Custom automation tools",
+					"Digital infrastructure setup",
+					"Training and documentation"
+				]}
+				ctaText="Explore AI Solutions"
+				ctaLink="#contact"
+			/>
+			<ServiceCard 
+				title="Emergency & Crisis Response"
+				description="When things go wrong, you need someone who can think clearly under pressure. Available for urgent situations that require immediate adaptive response."
+				features={[
+					"24/7 emergency availability",
+					"Rapid assessment protocols",
+					"Multi-domain crisis management",
+					"Clear communication throughout"
+				]}
+				ctaText="Emergency Contact"
+				ctaLink="mailto:harley@atlasdivisions.com"
+				isEmergency={true}
 			/>
 		</div>
 	</div>
@@ -48,16 +85,20 @@ import ServiceCard from './ServiceCard.astro';
 		z-index: 1;
 	}
 
-	.section-title {
+	.section-header {
 		text-align: center;
-		font-size: clamp(2rem, 4vw, 3rem);
-		font-weight: 700;
-		color: var(--color-text);
 		margin-bottom: 4rem;
+	}
+
+	.section-header h2 {
+		font-size: clamp(2rem, 4vw, 3rem);
+		color: var(--color-text);
+		margin-bottom: 1rem;
+		font-weight: 700;
 		position: relative;
 	}
 
-	.section-title::after {
+	.section-header h2::after {
 		content: '';
 		position: absolute;
 		bottom: -1rem;
@@ -69,11 +110,19 @@ import ServiceCard from './ServiceCard.astro';
 		border-radius: 2px;
 	}
 
+	.section-header p {
+		font-size: clamp(1.1rem, 2vw, 1.3rem);
+		color: var(--color-text-secondary);
+		font-weight: 400;
+	}
+
 	.services-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 		gap: 2rem;
 		align-items: start;
+		max-width: 1400px;
+		margin: 0 auto;
 	}
 
 	@media (max-width: 768px) {
@@ -86,7 +135,7 @@ import ServiceCard from './ServiceCard.astro';
 			gap: 1.5rem;
 		}
 
-		.section-title {
+		.section-header {
 			margin-bottom: 3rem;
 		}
 	}
