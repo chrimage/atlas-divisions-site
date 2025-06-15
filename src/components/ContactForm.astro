@@ -1,0 +1,294 @@
+---
+
+---
+
+<section class="contact">
+	<div class="container">
+		<h2 class="section-title">Get Started</h2>
+		<div class="contact-content">
+			<div class="contact-intro">
+				<p>Ready to tackle your complex challenges? Reach out directly or describe your situation below.</p>
+				<div class="email-link">
+					<a href="mailto:harley@atlasdivisions.com" class="email-button">
+						<span class="email-icon">✉</span>
+						harley@atlasdivisions.com
+					</a>
+				</div>
+			</div>
+			
+			<div class="form-container">
+				<form class="contact-form" action="/api/contact" method="POST">
+					<div class="form-group">
+						<label for="name">Name</label>
+						<input type="text" id="name" name="name" required />
+					</div>
+					
+					<div class="form-group">
+						<label for="email">Email</label>
+						<input type="email" id="email" name="email" required />
+					</div>
+					
+					<div class="form-group">
+						<label for="problemDescription">Short Problem Description</label>
+						<textarea id="problemDescription" name="problemDescription" rows="4" required placeholder="Briefly describe the challenge you're facing..."></textarea>
+					</div>
+					
+					<button type="submit" class="submit-button">
+						Send Message
+					</button>
+				</form>
+				
+				<div class="form-success" id="successMessage" style="display: none;">
+					<div class="success-content">
+						<span class="success-icon">✓</span>
+						<h3>Thank you for your message!</h3>
+						<p>We'll get back to you soon to discuss your challenge.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>
+
+<script>
+	document.querySelector('.contact-form')?.addEventListener('submit', async (e) => {
+		e.preventDefault();
+		
+		const form = e.target as HTMLFormElement;
+		const formData = new FormData(form);
+		const submitButton = form.querySelector('.submit-button') as HTMLButtonElement;
+		const successMessage = document.getElementById('successMessage');
+		
+		// Show loading state
+		submitButton.textContent = 'Sending...';
+		submitButton.disabled = true;
+		
+		try {
+			const response = await fetch('/api/contact', {
+				method: 'POST',
+				body: formData
+			});
+			
+			if (response.ok) {
+				form.style.display = 'none';
+				if (successMessage) {
+					successMessage.style.display = 'block';
+				}
+			} else {
+				throw new Error('Failed to send message');
+			}
+		} catch (error) {
+			alert('Sorry, there was an error sending your message. Please try the email link instead.');
+			submitButton.textContent = 'Send Message';
+			submitButton.disabled = false;
+		}
+	});
+</script>
+
+<style>
+	.contact {
+		padding: 6rem 0;
+		background: var(--color-bg);
+	}
+
+	.section-title {
+		text-align: center;
+		font-size: clamp(2rem, 4vw, 3rem);
+		font-weight: 700;
+		color: var(--color-text);
+		margin-bottom: 4rem;
+		position: relative;
+	}
+
+	.section-title::after {
+		content: '';
+		position: absolute;
+		bottom: -1rem;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 60px;
+		height: 3px;
+		background: linear-gradient(90deg, var(--color-accent-teal), var(--color-accent-gold));
+		border-radius: 2px;
+	}
+
+	.contact-content {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 4rem;
+		align-items: start;
+	}
+
+	.contact-intro {
+		padding: 2rem;
+	}
+
+	.contact-intro p {
+		font-size: 1.2rem;
+		color: var(--color-text-secondary);
+		margin-bottom: 2rem;
+		line-height: 1.6;
+	}
+
+	.email-link {
+		margin: 2rem 0;
+	}
+
+	.email-button {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.8rem;
+		padding: 1rem 2rem;
+		background: linear-gradient(135deg, var(--color-accent-gold), var(--color-accent-bronze));
+		color: var(--color-bg);
+		border-radius: 8px;
+		font-weight: 600;
+		font-size: 1.1rem;
+		transition: all 0.3s ease;
+		text-decoration: none;
+	}
+
+	.email-button:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+		color: var(--color-bg);
+	}
+
+	.email-icon {
+		font-size: 1.2rem;
+	}
+
+	.form-container {
+		background: rgba(26, 26, 26, 0.8);
+		border: 1px solid rgba(212, 175, 55, 0.2);
+		border-radius: 16px;
+		padding: 2.5rem;
+		backdrop-filter: blur(10px);
+	}
+
+	.contact-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.form-group {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.form-group label {
+		color: var(--color-text);
+		font-weight: 500;
+		margin-bottom: 0.5rem;
+		font-size: 0.95rem;
+	}
+
+	.form-group input,
+	.form-group textarea {
+		background: rgba(255, 255, 255, 0.05);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 8px;
+		padding: 0.75rem 1rem;
+		color: var(--color-text);
+		font-size: 1rem;
+		transition: all 0.3s ease;
+		font-family: var(--font-body);
+	}
+
+	.form-group input:focus,
+	.form-group textarea:focus {
+		outline: none;
+		border-color: var(--color-accent-gold);
+		background: rgba(255, 255, 255, 0.08);
+		box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+	}
+
+	.form-group textarea {
+		resize: vertical;
+		min-height: 100px;
+	}
+
+	.submit-button {
+		background: linear-gradient(135deg, var(--color-accent-teal), var(--color-accent-gold));
+		color: white;
+		border: none;
+		border-radius: 8px;
+		padding: 1rem 2rem;
+		font-size: 1.1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		margin-top: 1rem;
+	}
+
+	.submit-button:hover:not(:disabled) {
+		transform: translateY(-2px);
+		box-shadow: 0 8px 25px rgba(0, 128, 128, 0.3);
+	}
+
+	.submit-button:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+
+	.form-success {
+		text-align: center;
+		padding: 2rem;
+	}
+
+	.success-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.success-icon {
+		width: 60px;
+		height: 60px;
+		background: var(--color-accent-teal);
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 2rem;
+		color: white;
+		font-weight: bold;
+	}
+
+	.success-content h3 {
+		color: var(--color-text);
+		font-size: 1.5rem;
+		margin: 0;
+	}
+
+	.success-content p {
+		color: var(--color-text-secondary);
+		margin: 0;
+	}
+
+	@media (max-width: 768px) {
+		.contact {
+			padding: 4rem 0;
+		}
+
+		.contact-content {
+			grid-template-columns: 1fr;
+			gap: 2rem;
+		}
+
+		.contact-intro {
+			padding: 1rem;
+		}
+
+		.form-container {
+			padding: 2rem 1.5rem;
+		}
+
+		.email-button {
+			font-size: 1rem;
+			padding: 0.875rem 1.5rem;
+		}
+	}
+</style>

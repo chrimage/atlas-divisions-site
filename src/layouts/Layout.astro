@@ -1,0 +1,85 @@
+---
+export interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Atlas Divisions - Mapping Chaos. Building Resilience." />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	</head>
+	<body>
+		<slot />
+	</body>
+</html>
+
+<style is:global>
+	:root {
+		--color-bg: #0a0a0a;
+		--color-bg-secondary: #1a1a1a;
+		--color-text: #ffffff;
+		--color-text-secondary: #b8b8b8;
+		--color-accent-gold: #d4af37;
+		--color-accent-bronze: #cd7f32;
+		--color-accent-teal: #008080;
+		--font-heading: 'Montserrat', sans-serif;
+		--font-body: 'Inter', sans-serif;
+	}
+
+	* {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+
+	html {
+		scroll-behavior: smooth;
+	}
+
+	body {
+		font-family: var(--font-body);
+		background-color: var(--color-bg);
+		color: var(--color-text);
+		line-height: 1.6;
+		font-size: 16px;
+	}
+
+	h1, h2, h3, h4, h5, h6 {
+		font-family: var(--font-heading);
+		font-weight: 600;
+		line-height: 1.2;
+	}
+
+	a {
+		color: var(--color-accent-gold);
+		text-decoration: none;
+		transition: color 0.3s ease;
+	}
+
+	a:hover {
+		color: var(--color-accent-bronze);
+	}
+
+	.container {
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 0 2rem;
+	}
+
+	@media (max-width: 768px) {
+		.container {
+			padding: 0 1rem;
+		}
+	}
+</style>

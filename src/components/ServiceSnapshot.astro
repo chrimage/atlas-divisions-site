@@ -1,0 +1,93 @@
+---
+import ServiceCard from './ServiceCard.astro';
+---
+
+<section class="services">
+	<div class="container">
+		<h2 class="section-title">Our Approach</h2>
+		<div class="services-grid">
+			<ServiceCard 
+				title="Real-World Problem Solving"
+				description="Tackling complex challenges across mechanical, structural, and digital systems with practical, hands-on expertise."
+				icon="🔧"
+			/>
+			<ServiceCard 
+				title="Adaptive Crisis Response"
+				description="Dynamic solutions that evolve with changing circumstances, ensuring resilience when it matters most."
+				icon="⚡"
+			/>
+			<ServiceCard 
+				title="Transparent AI Integration"
+				description="Leveraging AI capabilities with complete transparency about what is and isn't AI-assisted in our work."
+				icon="🤖"
+			/>
+		</div>
+	</div>
+</section>
+
+<style>
+	.services {
+		padding: 6rem 0;
+		background: var(--color-bg-secondary);
+		position: relative;
+	}
+
+	.services::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: linear-gradient(45deg, transparent 0%, rgba(205, 127, 50, 0.05) 50%, transparent 100%);
+		pointer-events: none;
+	}
+
+	.container {
+		position: relative;
+		z-index: 1;
+	}
+
+	.section-title {
+		text-align: center;
+		font-size: clamp(2rem, 4vw, 3rem);
+		font-weight: 700;
+		color: var(--color-text);
+		margin-bottom: 4rem;
+		position: relative;
+	}
+
+	.section-title::after {
+		content: '';
+		position: absolute;
+		bottom: -1rem;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 60px;
+		height: 3px;
+		background: linear-gradient(90deg, var(--color-accent-gold), var(--color-accent-bronze));
+		border-radius: 2px;
+	}
+
+	.services-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 2rem;
+		align-items: start;
+	}
+
+	@media (max-width: 768px) {
+		.services {
+			padding: 4rem 0;
+		}
+
+		.services-grid {
+			grid-template-columns: 1fr;
+			gap: 1.5rem;
+		}
+
+		.section-title {
+			margin-bottom: 3rem;
+		}
+	}
+</style>
