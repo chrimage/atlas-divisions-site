@@ -1,9 +1,18 @@
 # Cloudflare Workers configuration for Atlas Divisions site
 
 name = "atlas-divisions-site"
-main = "dist/_worker.js"
+main = "./dist/_worker.js/index.js"
 compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
+
+# Static assets configuration
+[assets]
+binding = "ASSETS"
+directory = "./dist"
+
+# Observability
+[observability]
+enabled = true
 
 # Environment variables (set via Cloudflare dashboard or wrangler secret)
 [env.production]
@@ -28,10 +37,6 @@ ENVIRONMENT = "production"
 # Build configuration
 [build]
 command = "npm run build"
-
-# Deployment configuration
-[deploy]
-workers_dev = true
 
 # For improved cold start performance
 [placement]

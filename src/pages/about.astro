@@ -1,0 +1,293 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="About - Atlas Divisions">
+	<main>
+		<section class="hero-section">
+			<div class="container">
+				<div class="hero-content">
+					<h1>About Atlas Divisions</h1>
+					<p class="hero-subtitle">Adaptive Systems Architecture for Real-World Challenges</p>
+				</div>
+			</div>
+		</section>
+
+		<section class="bio-section">
+			<div class="container">
+				<div class="bio-content">
+					<div class="bio-text">
+						<h2>Captain Harley Miller</h2>
+						<h3>Adaptive Systems Architect</h3>
+						<p>
+							Atlas Divisions was founded on a simple principle: real problems require real solutions, 
+							not theoretical frameworks or vendor-driven complexity. As Captain Harley Miller, I bring 
+							decades of experience in high-pressure environments where failure isn't an option and 
+							adaptation is survival.
+						</p>
+						<p>
+							My approach combines hands-on technical expertise with strategic thinking, transparent 
+							AI integration, and a commitment to building systems that actually work when they're 
+							needed most. Whether it's emergency repairs, operational logistics, or crisis response, 
+							Atlas Divisions delivers solutions that outlast the storm.
+						</p>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section class="mission-section">
+			<div class="container">
+				<div class="mission-grid">
+					<div class="mission-card">
+						<h3>Our Mission</h3>
+						<p>
+							To provide adaptive, transparent, and effective solutions for complex real-world 
+							challenges. We bridge the gap between theoretical possibilities and practical 
+							implementation, ensuring our clients have systems that work when it matters most.
+						</p>
+					</div>
+					<div class="mission-card">
+						<h3>Our Vision</h3>
+						<p>
+							A world where communities and organizations are truly resilient—equipped with 
+							adaptive systems, transparent processes, and the knowledge to navigate uncertainty 
+							with confidence and capability.
+						</p>
+					</div>
+					<div class="mission-card">
+						<h3>Our Values</h3>
+						<ul>
+							<li><strong>Transparency:</strong> No black boxes, no hidden agendas</li>
+							<li><strong>Adaptability:</strong> Solutions that evolve with changing needs</li>
+							<li><strong>Practicality:</strong> Real-world effectiveness over theoretical elegance</li>
+							<li><strong>Integrity:</strong> Honest assessment, clear communication</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section class="objectives-section">
+			<div class="container">
+				<h2>Long-Term Objectives</h2>
+				<div class="objectives-grid">
+					<div class="objective-item">
+						<h4>Community Resilience</h4>
+						<p>Building local capacity for adaptive response to crises and challenges</p>
+					</div>
+					<div class="objective-item">
+						<h4>Ethical Tech Integration</h4>
+						<p>Demonstrating how AI and automation can serve human needs transparently</p>
+					</div>
+					<div class="objective-item">
+						<h4>Adaptive Strategy Development</h4>
+						<p>Creating frameworks that help organizations thrive in uncertain environments</p>
+					</div>
+					<div class="objective-item">
+						<h4>Knowledge Transfer</h4>
+						<p>Sharing practical wisdom and building capability in others</p>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section class="cta-section">
+			<div class="container">
+				<div class="cta-content">
+					<h2>Ready to Build Something That Lasts?</h2>
+					<p>Let's discuss how Atlas Divisions can help you navigate your challenges.</p>
+					<a href="mailto:harley@atlasdivisions.com" class="cta-button">Get in Touch</a>
+				</div>
+			</div>
+		</section>
+	</main>
+</Layout>
+
+<style>
+	.hero-section {
+		padding: 8rem 0 4rem;
+		background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-bg-secondary) 100%);
+		text-align: center;
+	}
+
+	.hero-content h1 {
+		font-size: clamp(2.5rem, 5vw, 4rem);
+		color: var(--color-text);
+		margin-bottom: 1rem;
+		font-weight: 800;
+	}
+
+	.hero-subtitle {
+		font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+		color: var(--color-accent-gold);
+		font-weight: 500;
+	}
+
+	.bio-section {
+		padding: 6rem 0;
+		background: var(--color-bg-secondary);
+	}
+
+	.bio-content {
+		max-width: 800px;
+		margin: 0 auto;
+		text-align: center;
+	}
+
+	.bio-text h2 {
+		font-size: 2.5rem;
+		color: var(--color-text);
+		margin-bottom: 0.5rem;
+		font-weight: 700;
+	}
+
+	.bio-text h3 {
+		font-size: 1.3rem;
+		color: var(--color-accent-gold);
+		margin-bottom: 2rem;
+		font-weight: 500;
+	}
+
+	.bio-text p {
+		font-size: 1.1rem;
+		color: var(--color-text-secondary);
+		line-height: 1.7;
+		margin-bottom: 1.5rem;
+	}
+
+	.mission-section {
+		padding: 6rem 0;
+		background: var(--color-bg);
+	}
+
+	.mission-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 2rem;
+		margin-top: 3rem;
+	}
+
+	.mission-card {
+		background: rgba(26, 26, 26, 0.6);
+		border: 1px solid rgba(212, 175, 55, 0.2);
+		border-radius: 16px;
+		padding: 2rem;
+		backdrop-filter: blur(10px);
+	}
+
+	.mission-card h3 {
+		font-size: 1.5rem;
+		color: var(--color-text);
+		margin-bottom: 1rem;
+		font-weight: 600;
+	}
+
+	.mission-card p {
+		color: var(--color-text-secondary);
+		line-height: 1.6;
+	}
+
+	.mission-card ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.mission-card li {
+		color: var(--color-text-secondary);
+		line-height: 1.6;
+		margin-bottom: 0.8rem;
+	}
+
+	.objectives-section {
+		padding: 6rem 0;
+		background: var(--color-bg-secondary);
+	}
+
+	.objectives-section h2 {
+		text-align: center;
+		font-size: 2.5rem;
+		color: var(--color-text);
+		margin-bottom: 3rem;
+		font-weight: 700;
+	}
+
+	.objectives-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+		gap: 2rem;
+	}
+
+	.objective-item {
+		text-align: center;
+		padding: 1.5rem;
+	}
+
+	.objective-item h4 {
+		font-size: 1.3rem;
+		color: var(--color-accent-gold);
+		margin-bottom: 1rem;
+		font-weight: 600;
+	}
+
+	.objective-item p {
+		color: var(--color-text-secondary);
+		line-height: 1.6;
+	}
+
+	.cta-section {
+		padding: 6rem 0;
+		background: var(--color-bg);
+		text-align: center;
+	}
+
+	.cta-content h2 {
+		font-size: 2.5rem;
+		color: var(--color-text);
+		margin-bottom: 1rem;
+		font-weight: 700;
+	}
+
+	.cta-content p {
+		font-size: 1.2rem;
+		color: var(--color-text-secondary);
+		margin-bottom: 2rem;
+	}
+
+	.cta-button {
+		display: inline-block;
+		padding: 1rem 2rem;
+		background: var(--color-accent-gold);
+		color: var(--color-bg);
+		border-radius: 8px;
+		text-decoration: none;
+		font-weight: 600;
+		font-size: 1.1rem;
+		transition: all 0.3s ease;
+	}
+
+	.cta-button:hover {
+		background: transparent;
+		color: var(--color-accent-gold);
+		border: 2px solid var(--color-accent-gold);
+	}
+
+	@media (max-width: 768px) {
+		.hero-section {
+			padding: 6rem 0 3rem;
+		}
+
+		.bio-section,
+		.mission-section,
+		.objectives-section,
+		.cta-section {
+			padding: 4rem 0;
+		}
+
+		.mission-grid,
+		.objectives-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
