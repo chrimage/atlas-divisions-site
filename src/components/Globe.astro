@@ -1,0 +1,294 @@
+---
+// Globe component with Three.js animation
+---
+
+<div class="globe-container">
+  <div id="globe-canvas"></div>
+</div>
+
+<script>
+  import * as THREE from 'three';
+
+  let scene: THREE.Scene, camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer, globeMesh: THREE.Mesh;
+  let mouseX = 0, mouseY = 0;
+  let targetRotationX = 0, targetRotationY = 0;
+
+  // Initialize Three.js scene
+  function initGlobe() {
+    const container = document.getElementById('globe-canvas');
+    if (!container) return;
+    
+    // Responsive sizing
+    const isMobile = window.innerWidth <= 768;
+    const width = isMobile ? 300 : 400;
+    const height = isMobile ? 300 : 400;
+
+    // Scene setup
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(width, height);
+    renderer.setClearColor(0x000000, 0);
+    container.appendChild(renderer.domElement);
+
+    // Create sphere geometry
+    const geometry = new THREE.SphereGeometry(1.5, 64, 64);
+    
+    // Create world map texture
+    createWorldTexture().then(texture => {
+      const material = new THREE.MeshPhongMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 0.9
+      });
+
+      globeMesh = new THREE.Mesh(geometry, material);
+      globeMesh.rotation.x = 0.1; // Slight tilt
+      scene.add(globeMesh);
+
+      // Add atmosphere glow
+      const atmosphereGeometry = new THREE.SphereGeometry(1.6, 64, 64);
+      const atmosphereMaterial = new THREE.MeshBasicMaterial({
+        color: 0xd4af37, // Atlas gold color
+        transparent: true,
+        opacity: 0.1,
+        side: THREE.BackSide
+      });
+      const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+      scene.add(atmosphere);
+    });
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xd4af37, 0.8);
+    directionalLight.position.set(5, 3, 5);
+    scene.add(directionalLight);
+
+    camera.position.z = 4;
+
+    // Mouse interaction
+    container.addEventListener('mousemove', onMouseMove, false);
+    container.addEventListener('mouseleave', onMouseLeave, false);
+
+    // Start animation
+    animate();
+  }
+
+  // Create world map texture from canvas
+  async function createWorldTexture(): Promise<THREE.CanvasTexture> {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 2048;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d')!;
+
+      // Fill with ocean color (dark)
+      ctx.fillStyle = '#001122';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Load and draw world map data
+      loadWorldMapData().then(() => {
+        drawWorldMapOnCanvas(ctx, canvas.width, canvas.height);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        resolve(texture);
+      });
+    });
+  }
+
+  // Draw world map on canvas for texture
+  function drawWorldMapOnCanvas(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    ctx.fillStyle = '#d4af37'; // Atlas gold
+    ctx.strokeStyle = '#cd7f32'; // Atlas bronze
+    ctx.lineWidth = 1;
+
+    if (!worldMapData) {
+      drawFallbackMapOnCanvas(ctx, width, height);
+      return;
+    }
+
+    worldMapData.features.forEach((feature: any) => {
+      if (feature.geometry.type === 'Polygon') {
+        drawPolygonOnCanvas(ctx, feature.geometry.coordinates, width, height);
+      } else if (feature.geometry.type === 'MultiPolygon') {
+        feature.geometry.coordinates.forEach((polygon: any) => {
+          drawPolygonOnCanvas(ctx, polygon, width, height);
+        });
+      }
+    });
+  }
+
+  function drawPolygonOnCanvas(ctx: CanvasRenderingContext2D, coordinates: any, width: number, height: number) {
+    coordinates.forEach((ring: any) => {
+      ctx.beginPath();
+      ring.forEach((coord: number[], index: number) => {
+        // Convert longitude/latitude to texture coordinates
+        const x = ((coord[0] + 180) / 360) * width;
+        const y = ((90 - coord[1]) / 180) * height;
+        
+        if (index === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    });
+  }
+
+  function drawFallbackMapOnCanvas(ctx: CanvasRenderingContext2D, width: number, height: number) {
+    // Simplified continents for fallback
+    const continents = [
+      // North America
+      { x: 0.2, y: 0.3, w: 0.25, h: 0.4 },
+      // South America
+      { x: 0.25, y: 0.5, w: 0.15, h: 0.35 },
+      // Europe
+      { x: 0.48, y: 0.25, w: 0.12, h: 0.15 },
+      // Africa
+      { x: 0.5, y: 0.35, w: 0.15, h: 0.4 },
+      // Asia
+      { x: 0.6, y: 0.2, w: 0.3, h: 0.35 },
+      // Australia
+      { x: 0.75, y: 0.65, w: 0.12, h: 0.1 }
+    ];
+
+    continents.forEach(continent => {
+      ctx.fillRect(
+        continent.x * width,
+        continent.y * height,
+        continent.w * width,
+        continent.h * height
+      );
+    });
+  }
+
+  // Real world map data from GeoJSON
+  let worldMapData: any = null;
+
+  async function loadWorldMapData() {
+    try {
+      const response = await fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson');
+      const geoData = await response.json();
+      worldMapData = geoData;
+    } catch (error) {
+      console.log('Could not load external map data, using fallback');
+      worldMapData = null;
+    }
+  }
+
+  // Mouse interaction handlers
+  function onMouseMove(event: MouseEvent) {
+    const container = document.getElementById('globe-canvas');
+    if (!container) return;
+    
+    const rect = container.getBoundingClientRect();
+    mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    
+    targetRotationX = mouseY * 0.2;
+    targetRotationY = mouseX * 0.2;
+  }
+
+  function onMouseLeave() {
+    targetRotationX = 0;
+    targetRotationY = 0;
+  }
+
+  // Animation loop
+  function animate() {
+    requestAnimationFrame(animate);
+
+    if (globeMesh) {
+      // Auto rotation
+      globeMesh.rotation.y += 0.005;
+      
+      // Mouse interaction (subtle)
+      globeMesh.rotation.x += (targetRotationX - globeMesh.rotation.x) * 0.05;
+      globeMesh.rotation.y += targetRotationY * 0.02;
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  // Handle window resize
+  function onWindowResize() {
+    const container = document.getElementById('globe-canvas');
+    if (!container) return;
+    
+    const width = container.offsetWidth;
+    const height = container.offsetHeight;
+    
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+  }
+
+  window.addEventListener('resize', onWindowResize, false);
+
+  // Initialize when component loads
+  document.addEventListener('DOMContentLoaded', () => {
+    initGlobe();
+  });
+</script>
+
+<style>
+  .globe-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+
+  #globe-canvas {
+    width: min(400px, 90vw);
+    height: min(400px, 90vw);
+    max-width: 400px;
+    max-height: 400px;
+    position: relative;
+    animation: float 6s ease-in-out infinite;
+    filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.3));
+    transition: transform 0.3s ease;
+  }
+
+  #globe-canvas:hover {
+    transform: scale(1.05);
+  }
+
+  #globe-canvas :global(canvas) {
+    border-radius: 50%;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  @media (max-width: 768px) {
+    #globe-canvas {
+      width: min(300px, 80vw);
+      height: min(300px, 80vw);
+    }
+    
+    #globe-canvas:hover {
+      transform: scale(1.02); /* Less aggressive scaling on mobile */
+    }
+  }
+
+  @media (max-width: 480px) {
+    #globe-canvas {
+      width: min(250px, 75vw);
+      height: min(250px, 75vw);
+    }
+  }
+</style>

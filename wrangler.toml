@@ -1,0 +1,38 @@
+# Cloudflare Workers configuration for Atlas Divisions site
+
+name = "atlas-divisions-site"
+main = "dist/_worker.js"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Environment variables (set via Cloudflare dashboard or wrangler secret)
+[env.production]
+name = "atlas-divisions-site"
+
+[env.staging]
+name = "atlas-divisions-site-staging"
+
+# Bindings for environment variables
+[vars]
+ENVIRONMENT = "production"
+
+# Routes for custom domain (configure these after domain setup)
+# [[env.production.routes]]
+# pattern = "atlasdivisions.com/*"
+# zone_name = "atlasdivisions.com"
+
+# [[env.production.routes]]
+# pattern = "www.atlasdivisions.com/*"
+# zone_name = "atlasdivisions.com"
+
+# Build configuration
+[build]
+command = "npm run build"
+
+# Deployment configuration
+[deploy]
+workers_dev = true
+
+# For improved cold start performance
+[placement]
+mode = "smart"
