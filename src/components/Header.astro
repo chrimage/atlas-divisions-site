@@ -21,14 +21,65 @@ import Globe from './Globe.astro';
 				<div class="cta-section">
 					<p class="cta-text">Facing something urgent or complex? Let's talk—clearly, honestly, effectively.</p>
 					<div class="cta-buttons">
-						<a href="mailto:harley@atlasdivisions.com" class="cta-button primary">Email Harley Directly</a>
+						<a href="mailto:harley@atlasdivisions.com?subject=Atlas%20Divisions%20Inquiry&body=Hi%20Harley,%0D%0A%0D%0AI%20need%20help%20with:%0D%0A%0D%0A" class="cta-button primary">Email Harley Directly</a>
 						<a href="#contact" class="cta-button secondary">Fill Out a Quick Form</a>
+					</div>
+					<div class="email-fallback">
+						<button class="copy-email-btn" id="copyEmailHeader">
+							📋 Copy: harley@atlasdivisions.com
+						</button>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 </header>
+
+<script>
+	// Copy email function for header
+	function copyEmailFromHeader() {
+		const email = 'harley@atlasdivisions.com';
+		navigator.clipboard.writeText(email).then(() => {
+			const btn = document.getElementById('copyEmailHeader') as HTMLButtonElement;
+			if (btn) {
+				const originalText = btn.textContent;
+				btn.textContent = '✓ Copied!';
+				btn.style.color = 'var(--color-accent-teal)';
+				setTimeout(() => {
+					btn.textContent = originalText;
+					btn.style.color = '';
+				}, 2000);
+			}
+		}).catch(() => {
+			// Fallback for older browsers
+			const textArea = document.createElement('textarea');
+			textArea.value = email;
+			document.body.appendChild(textArea);
+			textArea.select();
+			document.execCommand('copy');
+			document.body.removeChild(textArea);
+			
+			const btn = document.getElementById('copyEmailHeader') as HTMLButtonElement;
+			if (btn) {
+				const originalText = btn.textContent;
+				btn.textContent = '✓ Copied!';
+				btn.style.color = 'var(--color-accent-teal)';
+				setTimeout(() => {
+					btn.textContent = originalText;
+					btn.style.color = '';
+				}, 2000);
+			}
+		});
+	}
+
+	// Set up event listener when DOM is loaded
+	document.addEventListener('DOMContentLoaded', () => {
+		const copyHeaderBtn = document.getElementById('copyEmailHeader');
+		if (copyHeaderBtn) {
+			copyHeaderBtn.addEventListener('click', copyEmailFromHeader);
+		}
+	});
+</script>
 
 <style>
 	.hero {
@@ -162,6 +213,26 @@ import Globe from './Globe.astro';
 	.cta-button.secondary:hover {
 		background: var(--color-accent-teal);
 		color: var(--color-bg);
+	}
+
+	.email-fallback {
+		margin-top: 1rem;
+	}
+
+	.copy-email-btn {
+		background: transparent;
+		color: var(--color-text-secondary);
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		padding: 0.5rem 1rem;
+		border-radius: 6px;
+		font-size: 0.9rem;
+		cursor: pointer;
+		transition: all 0.3s ease;
+	}
+
+	.copy-email-btn:hover {
+		color: var(--color-accent-gold);
+		border-color: var(--color-accent-gold);
 	}
 
 	@keyframes fadeInUp {

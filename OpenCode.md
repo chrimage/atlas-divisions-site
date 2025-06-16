@@ -28,6 +28,7 @@ npm run deploy       # Deploy to Cloudflare Pages
 - **Tagline:** "Solutions That Outlast the Storm" (updated from "Mapping Chaos")
 - **Messaging:** Emphasizes practical, transparent, adaptive solutions
 - **Services:** Auto/Home Repair, Logistics, AI Tools, Emergency Response
+- **Contact:** Simplified approach with reliable email links and copy functionality
 - **CTA:** "Tell us what you're facing" with 24hr response promise
 
 ## Code Style Guidelines
