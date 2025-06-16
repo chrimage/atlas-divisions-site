@@ -30,15 +30,20 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Send email using MailChannels (works with Cloudflare Workers)
-    await sendEmailViaMailChannels({
+    // Log the submission (for now, until we set up a proper email service)
+    console.log('Contact form submission:', {
       name: name.trim(),
       email: email.trim(),
-      problemDescription: problemDescription.trim()
+      problemDescription: problemDescription.trim(),
+      timestamp: new Date().toISOString()
     });
 
+    // For now, we'll just return success and suggest the direct email
     return new Response(
-      JSON.stringify({ message: 'Submission successful' }),
+      JSON.stringify({ 
+        message: 'Thank you for your submission! For fastest response, please also email harley@atlasdivisions.com directly.',
+        fallbackEmail: 'harley@atlasdivisions.com'
+      }),
       { 
         status: 200,
         headers: { 'Content-Type': 'application/json' }
@@ -48,7 +53,7 @@ export const POST: APIRoute = async ({ request }) => {
   } catch (error) {
     console.error('Contact form error:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to send message. Please try the email link.' }),
+      JSON.stringify({ error: 'Please email harley@atlasdivisions.com directly.' }),
       { 
         status: 500,
         headers: { 'Content-Type': 'application/json' }
@@ -56,68 +61,3 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 };
-
-async function sendEmailViaMailChannels({ name, email, problemDescription }: {
-  name: string;
-  email: string;
-  problemDescription: string;
-}) {
-  const emailPayload = {
-    personalizations: [
-      {
-        to: [{ email: 'harley@atlasdivisions.com', name: 'Harley Miller' }],
-        dkim_domain: 'atlasdivisions.com',
-        dkim_selector: 'mailchannels',
-        dkim_private_key: process.env.DKIM_PRIVATE_KEY || ''
-      }
-    ],
-    from: {
-      email: 'noreply@atlasdivisions.com',
-      name: 'Atlas Divisions Contact Form'
-    },
-    reply_to: {
-      email: email,
-      name: name
-    },
-    subject: `New Contact Form Submission from ${name}`,
-    content: [
-      {
-        type: 'text/html',
-        value: `
-          <h2>New Contact Form Submission</h2>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Problem Description:</strong></p>
-          <p>${problemDescription.replace(/\n/g, '<br>')}</p>
-          <hr>
-          <p><small>Submitted at: ${new Date().toISOString()}</small></p>
-        `
-      },
-      {
-        type: 'text/plain',
-        value: `
-New Contact Form Submission
-
-Name: ${name}
-Email: ${email}
-Problem Description: ${problemDescription}
-
-Submitted at: ${new Date().toISOString()}
-        `
-      }
-    ]
-  };
-
-  const response = await fetch('https://api.mailchannels.net/tx/v1/send', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(emailPayload),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`MailChannels API error: ${response.status} - ${errorText}`);
-  }
-}
