@@ -89,10 +89,40 @@ npm run deploy
 - ✓ Production-ready build system
 
 ## Deployment & Configuration
-- **Cloudflare Pages:** Ready for deployment with wrangler configuration
-- **Email Service:** MailChannels integration for contact form
-- **Environment Variables:** DKIM_PRIVATE_KEY for email authentication
+- **Cloudflare Workers:** Deployed via wrangler with server-side rendering
+- **Email Service:** Resend API integration for contact form
+- **Environment Variables:** FROM_EMAIL, TO_EMAIL configured in wrangler.toml
+- **Secrets:** RESEND_API_KEY set via wrangler secret command
 - **Domain:** Configured for atlasdivisions.com
+
+### Contact Form Setup
+The contact form uses Resend API for email delivery. To configure:
+
+1. **Set up Resend Account:**
+   - Create account at [resend.com](https://resend.com)
+   - Verify your sending domain
+   - Generate API key
+
+2. **Configure Email Addresses:**
+   Edit `wrangler.toml` to set sender/recipient:
+   ```toml
+   [vars]
+   FROM_EMAIL = "contact@yourdomain.com"
+   TO_EMAIL = "recipient@example.com"
+   ```
+
+3. **Set API Key Secret:**
+   ```bash
+   npx wrangler secret put RESEND_API_KEY
+   ```
+   Enter your Resend API key when prompted.
+
+4. **Deploy:**
+   ```bash
+   npm run deploy
+   ```
+
+**Note:** The FROM_EMAIL domain must be verified with Resend for email sending to work.
 
 ## Next Steps & Enhancements
 - [ ] Add Google Analytics or similar tracking
