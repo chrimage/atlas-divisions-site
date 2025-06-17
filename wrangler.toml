@@ -24,6 +24,8 @@ name = "atlas-divisions-site-staging"
 # Bindings for environment variables
 [vars]
 ENVIRONMENT = "production"
+FROM_EMAIL = "contact@bytecrash.xyz"
+TO_EMAIL = "john.chris.smith@gmail.com"
 
 # Routes for custom domain (configure these after domain setup)
 # [[env.production.routes]]
