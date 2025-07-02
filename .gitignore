@@ -32,3 +32,6 @@ opencode-*.log
 .claude/
 .wrangler/
 web-bundles/
+
+# Configuration files with sensitive data
+wrangler.toml

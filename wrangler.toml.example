@@ -1,0 +1,53 @@
+# Cloudflare Workers configuration for Atlas Divisions site
+
+name = "your-project-name"
+main = "./dist/_worker.js/index.js"
+account_id = "your-cloudflare-account-id"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Static assets configuration
+[assets]
+binding = "ASSETS"
+directory = "./dist"
+
+# Observability
+[observability]
+enabled = true
+
+# Environment variables (set via Cloudflare dashboard or wrangler secret)
+[env.production]
+name = "your-project-name"
+
+[env.staging]
+name = "your-project-name-staging"
+
+# Bindings for environment variables
+[vars]
+ENVIRONMENT = "production"
+FROM_EMAIL_NAME = "your-from-email-name"
+ADMIN_EMAIL = "your-admin@example.com"
+MG_DOMAIN = "your-mailgun-domain.mailgun.org"
+
+# Routes for custom domain (configure these after domain setup)
+# [[env.production.routes]]
+# pattern = "atlasdivisions.com/*"
+# zone_name = "atlasdivisions.com"
+
+# [[env.production.routes]]
+# pattern = "www.atlasdivisions.com/*"
+# zone_name = "atlasdivisions.com"
+
+# D1 Database configuration
+[[d1_databases]]
+binding = "DB"
+database_name = "your-database-name"
+database_id = "your-d1-database-id"
+
+# Build configuration
+[build]
+command = "npm run build"
+
+# For improved cold start performance
+[placement]
+mode = "smart"

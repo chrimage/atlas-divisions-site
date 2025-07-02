@@ -32,11 +32,40 @@ cd atlas-divisions-site
 # Install dependencies
 npm install
 
+# Copy and configure wrangler.toml
+cp wrangler.toml.example wrangler.toml
+# Edit wrangler.toml with your Cloudflare account details
+
 # Start development server
 npm run dev
 ```
 
 Visit `http://localhost:4321` to see the site in action.
+
+### Configuration Setup
+
+1. **Copy the example configuration:**
+   ```bash
+   cp wrangler.toml.example wrangler.toml
+   ```
+
+2. **Update `wrangler.toml` with your details:**
+   - `account_id`: Your Cloudflare account ID
+   - `name`: Your project name
+   - `ADMIN_EMAIL`: Admin email for contact form notifications
+   - `MG_DOMAIN`: Your Mailgun domain
+   - `database_id`: Your D1 database ID (after creating it)
+
+3. **Create D1 Database:**
+   ```bash
+   npx wrangler d1 create your-database-name
+   npx wrangler d1 execute your-database-name --file=./schema.sql --remote
+   ```
+
+4. **Set Mailgun API Key:**
+   ```bash
+   npx wrangler secret put MG_API_KEY
+   ```
 
 ## 📁 Project Structure
 
