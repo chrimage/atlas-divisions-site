@@ -4,10 +4,6 @@
 
 <div class="globe-container" role="img" aria-label="Interactive 3D globe showing Atlas Divisions global presence">
   <div id="globe-canvas" aria-live="polite" aria-describedby="globe-description">
-    <div class="globe-loading" id="globe-loading" aria-label="Loading interactive globe">
-      <div class="loading-spinner" aria-hidden="true"></div>
-      <p>Loading Atlas Globe...</p>
-    </div>
     <div id="globe-description" class="sr-only">
       An interactive 3D globe that can be rotated by clicking and dragging. The globe shows world continents and represents Atlas Divisions' global reach.
     </div>
@@ -53,27 +49,16 @@
       try {
         await this.createScene();
         this.setupEventListeners();
-        this.hideLoading();
       } catch (error) {
         console.error('Globe initialization failed:', error);
         this.showError();
       }
     }
     
-    hideLoading() {
-      const loadingElement = document.getElementById('globe-loading');
-      if (loadingElement) {
-        loadingElement.style.opacity = '0';
-        setTimeout(() => {
-          loadingElement.style.display = 'none';
-        }, 300);
-      }
-    }
-    
     showError() {
-      const loadingElement = document.getElementById('globe-loading');
-      if (loadingElement) {
-        loadingElement.innerHTML = `
+      const container = document.getElementById('globe-canvas');
+      if (container) {
+        container.innerHTML = `
           <div class="globe-error">
             <div class="error-icon">🌍</div>
             <p>Globe unavailable</p>
@@ -422,9 +407,9 @@
       } catch (error) {
         console.error('Atlas Globe initialization failed:', error);
         // Show error state
-        const loadingElement = document.getElementById('globe-loading');
-        if (loadingElement) {
-          loadingElement.innerHTML = `
+        const container = document.getElementById('globe-canvas');
+        if (container) {
+          container.innerHTML = `
             <div class="globe-error">
               <div class="error-icon">🌍</div>
               <p>Globe unavailable</p>
@@ -463,7 +448,6 @@
     border-radius: 50%;
   }
 
-  .globe-loading,
   .globe-error {
     position: absolute;
     top: 0;
@@ -475,20 +459,8 @@
     justify-content: center;
     align-items: center;
     color: var(--color-accent-gold);
-    transition: opacity 0.3s ease;
   }
 
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(212, 175, 55, 0.3);
-    border-top: 3px solid var(--color-accent-gold);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
-  }
-
-  .globe-loading p,
   .globe-error p {
     font-size: 0.9rem;
     color: var(--color-text-secondary);
@@ -498,11 +470,6 @@
   .error-icon {
     font-size: 3rem;
     margin-bottom: 0.5rem;
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
   }
 
   @keyframes float {
@@ -531,11 +498,6 @@
   @media (prefers-reduced-motion: reduce) {
     #globe-canvas {
       animation: none;
-    }
-    
-    .loading-spinner {
-      animation: none;
-      border: 3px solid var(--color-accent-gold);
     }
     
     #globe-canvas:hover {
