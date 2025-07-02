@@ -76,36 +76,14 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     }
     const formData = await request.formData();
     
-    // Extract and sanitize form data
+    // Extract raw form data
     const rawName = formData.get('name') as string;
     const rawEmail = formData.get('email') as string;
     const rawPhone = formData.get('phone') as string;
     const rawServiceType = formData.get('service_type') as string;
     const rawMessage = formData.get('message') as string;
 
-    // Sanitize inputs
-    const name = escapeHtml(rawName?.trim() || '');
-    const email = rawEmail?.trim() || '';
-    const phone = escapeHtml(rawPhone?.trim() || '');
-    const service_type = escapeHtml(rawServiceType?.trim() || '');
-    const message = escapeHtml(rawMessage?.trim() || '');
-
-    // Validation
-    const errors: string[] = [];
-    
-    // Required field validation
-    if (!name || name.length < 2) {
-      errors.push('Name must be at least 2 characters long');
-    }
-    
-    if (name.length > 100) {
-      errors.push('Name must be less than 100 characters');
-    }
-    
-    if (!service_type) {
-      errors.push('Service type is required');
-    }
-    
+    // Validate service type first (before any sanitization)
     const validServiceTypes = [
       'Auto & Home Systems Repair',
       'Logistics & Adaptive Operations', 
@@ -115,9 +93,32 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       'Partnership Opportunity'
     ];
     
-    if (service_type && !validServiceTypes.includes(service_type)) {
+    const trimmedServiceType = rawServiceType?.trim() || '';
+    
+    // Validation
+    const errors: string[] = [];
+    
+    // Required field validation
+    if (!rawName?.trim() || rawName.trim().length < 2) {
+      errors.push('Name must be at least 2 characters long');
+    }
+    
+    if (rawName?.trim().length > 100) {
+      errors.push('Name must be less than 100 characters');
+    }
+    
+    if (!trimmedServiceType) {
+      errors.push('Service type is required');
+    } else if (!validServiceTypes.includes(trimmedServiceType)) {
       errors.push('Invalid service type selected');
     }
+    
+    // Sanitize inputs AFTER validation
+    const name = escapeHtml(rawName?.trim() || '');
+    const email = rawEmail?.trim() || '';
+    const phone = escapeHtml(rawPhone?.trim() || '');
+    const service_type = trimmedServiceType; // Already validated, safe to use
+    const message = escapeHtml(rawMessage?.trim() || '');
     
     if (!message || message.length < 10) {
       errors.push('Message must be at least 10 characters long');
@@ -125,6 +126,11 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     
     if (message.length > 2000) {
       errors.push('Message must be less than 2000 characters');
+    }
+
+    // Require at least email or phone for contact
+    if (!email && !phone) {
+      errors.push('Please provide either an email address or phone number so we can reach you');
     }
 
     // Email validation (only if provided)
@@ -198,6 +204,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     }
 
     // Send email notification if Mailgun is configured
+    console.log(`[${requestId}] Email config check - Domain: ${mgDomain}, Admin: ${adminEmail}, API Key: ${mgApiKey ? 'SET' : 'NOT_SET'}`);
+    
     if (mgApiKey && mgDomain && adminEmail) {
       try {
         const subject = `Atlas Divisions Contact: ${service_type} - ${name}`;
@@ -243,7 +251,10 @@ Solutions That Outlast the Storm - Reply directly to contact the customer.
         
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`❌ Email failed: ${response.status} ${response.statusText} - ${errorText}`);
+          console.error(`❌ Email failed: ${response.status} ${response.statusText}`);
+          console.error(`❌ Mailgun domain: ${mgDomain}`);
+          console.error(`❌ From email: ${fromEmail}`);
+          console.error(`❌ Error details: ${errorText}`);
         } else {
           console.log(`✅ Email notification sent successfully for submission ${submission.id}`);
         }
