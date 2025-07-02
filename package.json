@@ -19,7 +19,6 @@
     "@types/three": "^0.177.0",
     "astro": "^5.9.3",
     "escape-html": "^1.0.3",
-    "resend": "^4.6.0",
     "three": "^0.177.0"
   },
   "devDependencies": {
