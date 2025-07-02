@@ -11,7 +11,7 @@ A professional website for Captain Harley Miller's adaptive solutions company, f
 
 - **Interactive 3D Globe**: Real-world map data with mouse interaction and smooth animations
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices
-- **Email Integration**: Contact form powered by MailChannels (free email service)
+- **Email Integration**: Contact form powered by Mailgun with database storage
 - **Modern Stack**: Built with Astro, TypeScript, and Three.js
 - **Edge Deployment**: Optimized for Cloudflare Workers with global edge distribution
 - **Performance First**: Minimal JavaScript, fast loading, and efficient rendering
@@ -33,8 +33,8 @@ cd atlas-divisions-site
 npm install
 
 # Copy and configure wrangler.toml
-cp wrangler.toml.example wrangler.toml
 # Edit wrangler.toml with your Cloudflare account details
+# See DEPLOYMENT.md for complete setup instructions
 
 # Start development server
 npm run dev
@@ -42,30 +42,27 @@ npm run dev
 
 Visit `http://localhost:4321` to see the site in action.
 
-### Configuration Setup
+### Quick Configuration
 
-1. **Copy the example configuration:**
-   ```bash
-   cp wrangler.toml.example wrangler.toml
-   ```
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete setup instructions including:
 
-2. **Update `wrangler.toml` with your details:**
-   - `account_id`: Your Cloudflare account ID
-   - `name`: Your project name
-   - `ADMIN_EMAIL`: Admin email for contact form notifications
-   - `MG_DOMAIN`: Your Mailgun domain
-   - `database_id`: Your D1 database ID (after creating it)
+- Cloudflare Workers and D1 database setup
+- Mailgun email service configuration
+- Environment variables and secrets
+- Admin panel authentication setup
+- Custom domain configuration
 
-3. **Create D1 Database:**
-   ```bash
-   npx wrangler d1 create your-database-name
-   npx wrangler d1 execute your-database-name --file=./schema.sql --remote
-   ```
+**Quick Start:**
+```bash
+# Set required secrets
+npx wrangler secret put MG_API_KEY
 
-4. **Set Mailgun API Key:**
-   ```bash
-   npx wrangler secret put MG_API_KEY
-   ```
+# Deploy database schema
+npx wrangler d1 execute atlas-divisions-contacts --file=./schema.sql --remote
+
+# Deploy to Cloudflare Workers
+npm run build:deploy
+```
 
 ## 📁 Project Structure
 
@@ -75,18 +72,24 @@ atlas-divisions-site/
 │   ├── components/
 │   │   ├── Header.astro           # Hero section with globe and branding
 │   │   ├── Globe.astro            # Interactive Three.js globe animation
+│   │   ├── Navigation.astro       # Site navigation component
 │   │   ├── ServiceSnapshot.astro  # Service cards container
 │   │   ├── ServiceCard.astro      # Individual service card
 │   │   └── ContactForm.astro      # Contact section with email form
 │   ├── layouts/
 │   │   └── Layout.astro           # Main page layout with global styles
+│   ├── middleware.ts              # Security middleware (CSP, CORS, caching)
+│   ├── types.ts                   # TypeScript type definitions
 │   └── pages/
 │       ├── index.astro            # Main landing page
+│       ├── about.astro            # About page
+│       ├── services.astro         # Services page
+│       ├── admin.astro            # Admin panel for submissions
 │       └── api/
 │           └── contact.ts         # Contact form API endpoint
 ├── public/
 │   └── favicon.svg
-├── OpenCode.md                    # Development commands and style guide
+├── schema.sql                     # D1 database schema
 ├── DEPLOYMENT.md                  # Comprehensive deployment guide
 └── wrangler.toml                  # Cloudflare Workers configuration
 ```
@@ -110,7 +113,10 @@ Dark minimalist design with subtle gradients, smooth animations, and professiona
 - **Framework**: [Astro](https://astro.build/) v5.9.3 with TypeScript (strict mode)
 - **3D Graphics**: [Three.js](https://threejs.org/) v0.177.0 for interactive globe
 - **Deployment**: [Cloudflare Workers](https://workers.cloudflare.com/) with edge distribution
-- **Email**: [MailChannels](https://mailchannels.com/) integration for contact form
+- **Database**: [Cloudflare D1](https://developers.cloudflare.com/d1/) for contact submissions
+- **Email**: [Mailgun](https://mailgun.com/) integration for contact form
+- **Authentication**: [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/applications/) for admin panel
+- **Security**: Custom middleware with CSP, rate limiting, and CORS
 - **Styling**: Custom CSS with CSS variables, no external frameworks
 
 ## 🌐 Globe Animation
@@ -122,14 +128,20 @@ The centerpiece interactive globe features:
 - **Performance optimized** canvas texture generation
 - **Atlas branding** using company gold/bronze color scheme
 
-## 📧 Contact Form
+## 📧 Contact Form & Admin Panel
 
-Fully functional contact form with:
+**Contact Form Features:**
 - **Server-side validation** and error handling
-- **MailChannels integration** for reliable email delivery
-- **DKIM support** for better deliverability
+- **Mailgun integration** for reliable email delivery
+- **Database storage** of all submissions in Cloudflare D1
 - **Rate limiting** and spam protection
 - **Responsive design** with smooth animations
+
+**Admin Panel Features:**
+- **Cloudflare Access authentication** for secure access
+- **Submission management** with status tracking
+- **Real-time submission viewing** with search and filtering
+- **Email integration** for direct customer communication
 
 ## 🚀 Deployment
 
@@ -169,7 +181,10 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for comprehensive deployment instructions.
 ## 🔧 Configuration
 
 ### Environment Variables
-- `DKIM_PRIVATE_KEY`: Optional DKIM private key for email signing
+- `MG_API_KEY`: Mailgun API key (set via `wrangler secret`)
+- `MG_DOMAIN`: Your verified Mailgun domain
+- `ADMIN_EMAIL`: Email address for contact form notifications
+- `FROM_EMAIL_NAME`: Name for outgoing emails (default: "contact")
 
 ### Wrangler Configuration
 The `wrangler.toml` file is pre-configured for:
@@ -203,11 +218,13 @@ The site is fully responsive with optimized layouts for:
 
 ## 🔒 Security
 
-- Input validation and sanitization
-- CSRF protection
-- Rate limiting on contact form
-- Secure headers configuration
-- Environment variable encryption
+- **Input validation and sanitization** with escape-html
+- **Rate limiting** on contact form (5 requests/minute per IP)
+- **Content Security Policy (CSP)** headers
+- **CORS handling** for cross-origin requests
+- **Cloudflare Access authentication** for admin panel
+- **Environment variable encryption** via Wrangler secrets
+- **Security headers** (X-Frame-Options, X-Content-Type-Options, etc.)
 
 ## 📈 Analytics & Monitoring
 
@@ -239,7 +256,8 @@ This project is proprietary software for Atlas Divisions.
 - [Astro](https://astro.build/) for the amazing web framework
 - [Three.js](https://threejs.org/) for 3D graphics capabilities
 - [Cloudflare](https://cloudflare.com/) for edge computing platform
-- [MailChannels](https://mailchannels.com/) for email delivery service
+- [Mailgun](https://mailgun.com/) for email delivery service
+- [Cloudflare D1](https://developers.cloudflare.com/d1/) for database services
 
 ---
 
