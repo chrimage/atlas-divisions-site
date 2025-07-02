@@ -202,6 +202,8 @@ import Globe from './Globe.astro';
 		background: transparent;
 		color: var(--color-accent-gold);
 		border-color: var(--color-accent-gold);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
 	}
 
 	.cta-button.secondary {
@@ -213,6 +215,8 @@ import Globe from './Globe.astro';
 	.cta-button.secondary:hover {
 		background: var(--color-accent-teal);
 		color: var(--color-bg);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 128, 128, 0.2);
 	}
 
 	.email-fallback {
@@ -224,7 +228,7 @@ import Globe from './Globe.astro';
 		color: var(--color-text-secondary);
 		border: 1px solid rgba(255, 255, 255, 0.2);
 		padding: 0.5rem 1rem;
-		border-radius: 6px;
+		border-radius: 8px;
 		font-size: 0.9rem;
 		cursor: pointer;
 		transition: all 0.3s ease;

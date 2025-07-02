@@ -118,21 +118,25 @@ import ServiceCard from './ServiceCard.astro';
 
 	.services-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		grid-template-columns: 1fr 1fr;
+		grid-template-rows: 1fr 1fr;
 		gap: 2rem;
 		align-items: start;
-		max-width: 1400px;
+		max-width: 1200px;
 		margin: 0 auto;
+	}
+
+	@media (max-width: 992px) {
+		.services-grid {
+			grid-template-columns: 1fr;
+			grid-template-rows: auto;
+			gap: 1.5rem;
+		}
 	}
 
 	@media (max-width: 768px) {
 		.services {
 			padding: 4rem 0;
-		}
-
-		.services-grid {
-			grid-template-columns: 1fr;
-			gap: 1.5rem;
 		}
 
 		.section-header {

@@ -36,7 +36,7 @@ const { title, description, features, ctaText, ctaLink, isEmergency = false } = 
 	.service-card {
 		background: rgba(26, 26, 26, 0.6);
 		border: 1px solid rgba(212, 175, 55, 0.2);
-		border-radius: 16px;
+		border-radius: 12px;
 		padding: 2rem;
 		transition: all 0.3s ease;
 		backdrop-filter: blur(10px);
@@ -165,11 +165,15 @@ const { title, description, features, ctaText, ctaLink, isEmergency = false } = 
 	.cta-button:hover {
 		background: var(--color-accent-gold);
 		color: var(--color-bg);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
 	}
 
 	.cta-button.emergency:hover {
 		background: #dc143c;
 		color: var(--color-text);
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(220, 20, 60, 0.2);
 	}
 
 	@media (max-width: 768px) {
