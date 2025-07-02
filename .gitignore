@@ -26,3 +26,9 @@ pnpm-debug.log*
 # OpenCode files
 .opencode/
 opencode-*.log
+
+# Development/Build artifacts
+.bmad-core/
+.claude/
+.wrangler/
+web-bundles/
