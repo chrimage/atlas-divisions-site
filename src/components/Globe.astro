@@ -2,12 +2,21 @@
 // Enhanced Globe component with drag/momentum physics
 ---
 
-<div class="globe-container">
-  <div id="globe-canvas"></div>
+<div class="globe-container" role="img" aria-label="Interactive 3D globe showing Atlas Divisions global presence">
+  <div id="globe-canvas" aria-live="polite" aria-describedby="globe-description">
+    <div class="globe-loading" id="globe-loading" aria-label="Loading interactive globe">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p>Loading Atlas Globe...</p>
+    </div>
+    <div id="globe-description" class="sr-only">
+      An interactive 3D globe that can be rotated by clicking and dragging. The globe shows world continents and represents Atlas Divisions' global reach.
+    </div>
+  </div>
 </div>
 
 <script>
-  import * as THREE from 'three';
+  // Dynamic import with loading state and error handling
+  let THREE = null;
 
   class AtlasGlobe {
     constructor() {
@@ -35,14 +44,42 @@
       this.init();
     }
     
-    init() {
-      if (typeof THREE === 'undefined') {
+    async init() {
+      if (!THREE) {
         console.error('Three.js not loaded');
         return;
       }
       
-      this.createScene();
-      this.setupEventListeners();
+      try {
+        await this.createScene();
+        this.setupEventListeners();
+        this.hideLoading();
+      } catch (error) {
+        console.error('Globe initialization failed:', error);
+        this.showError();
+      }
+    }
+    
+    hideLoading() {
+      const loadingElement = document.getElementById('globe-loading');
+      if (loadingElement) {
+        loadingElement.style.opacity = '0';
+        setTimeout(() => {
+          loadingElement.style.display = 'none';
+        }, 300);
+      }
+    }
+    
+    showError() {
+      const loadingElement = document.getElementById('globe-loading');
+      if (loadingElement) {
+        loadingElement.innerHTML = `
+          <div class="globe-error">
+            <div class="error-icon">🌍</div>
+            <p>Globe unavailable</p>
+          </div>
+        `;
+      }
     }
     
     createScene() {
@@ -338,21 +375,61 @@
     }
   }
 
-  // Initialize globe when component loads
+  // Initialize globe when component loads with dynamic import
   let atlasGlobe = null;
   
-  document.addEventListener('DOMContentLoaded', () => {
+  async function loadThreeJS() {
+    try {
+      const threeModule = await import('three');
+      THREE = threeModule;
+      return true;
+    } catch (error) {
+      console.error('Failed to load Three.js:', error);
+      return false;
+    }
+  }
+  
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Check for reduced motion preference
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    if (prefersReducedMotion) {
+      // Show static globe for users who prefer reduced motion
+      const container = document.getElementById('globe-canvas');
+      if (container) {
+        container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#d4af37;font-size:8rem;">🌍</div>';
+      }
+      return;
+    }
+    
+    // Load Three.js dynamically
+    const threeLoaded = await loadThreeJS();
+    
+    if (!threeLoaded) {
+      // Fallback to static globe emoji
+      const container = document.getElementById('globe-canvas');
+      if (container) {
+        container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#d4af37;font-size:8rem;">🌍</div>';
+      }
+      return;
+    }
+    
     // Small delay to ensure container is ready
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         atlasGlobe = new AtlasGlobe();
         console.log('Enhanced Atlas Globe initialized successfully');
       } catch (error) {
         console.error('Atlas Globe initialization failed:', error);
-        // Fallback to static globe emoji
-        const container = document.getElementById('globe-canvas');
-        if (container) {
-          container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#d4af37;font-size:8rem;animation:float 6s ease-in-out infinite;">🌍</div>';
+        // Show error state
+        const loadingElement = document.getElementById('globe-loading');
+        if (loadingElement) {
+          loadingElement.innerHTML = `
+            <div class="globe-error">
+              <div class="error-icon">🌍</div>
+              <p>Globe unavailable</p>
+            </div>
+          `;
         }
       }
     }, 100);
@@ -386,12 +463,83 @@
     border-radius: 50%;
   }
 
+  .globe-loading,
+  .globe-error {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: var(--color-accent-gold);
+    transition: opacity 0.3s ease;
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(212, 175, 55, 0.3);
+    border-top: 3px solid var(--color-accent-gold);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+
+  .globe-loading p,
+  .globe-error p {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .error-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
   @keyframes float {
     0%, 100% {
       transform: translateY(0px);
     }
     50% {
       transform: translateY(-20px);
+    }
+  }
+
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Respect reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    #globe-canvas {
+      animation: none;
+    }
+    
+    .loading-spinner {
+      animation: none;
+      border: 3px solid var(--color-accent-gold);
+    }
+    
+    #globe-canvas:hover {
+      transform: none;
     }
   }
 

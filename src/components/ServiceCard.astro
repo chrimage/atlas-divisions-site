@@ -1,12 +1,7 @@
 ---
-export interface Props {
-	title: string;
-	description: string;
-	features: string[];
-	ctaText: string;
-	ctaLink: string;
-	isEmergency?: boolean;
-}
+import type { ServiceCardProps } from '../types';
+
+export type Props = ServiceCardProps;
 
 const { title, description, features, ctaText, ctaLink, isEmergency = false } = Astro.props;
 ---

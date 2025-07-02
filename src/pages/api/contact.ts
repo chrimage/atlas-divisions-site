@@ -1,38 +1,164 @@
 import type { APIRoute } from 'astro';
 import escapeHtml from 'escape-html';
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  try {
-    const formData = await request.formData();
-    const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
-    const phone = formData.get('phone') as string;
-    const service_type = formData.get('service_type') as string;
-    const message = formData.get('message') as string;
+// Simple in-memory rate limiter (for production, use Redis or similar)
+const rateLimiter = new Map<string, { count: number; resetTime: number }>();
 
-    // Basic validation
-    if (!name || !service_type || !message) {
+function isRateLimited(ip: string, maxRequests: number = 5, windowMs: number = 60000): boolean {
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  
+  // Clean old entries
+  for (const [key, value] of rateLimiter.entries()) {
+    if (value.resetTime < now) {
+      rateLimiter.delete(key);
+    }
+  }
+  
+  const current = rateLimiter.get(ip);
+  
+  if (!current) {
+    rateLimiter.set(ip, { count: 1, resetTime: now + windowMs });
+    return false;
+  }
+  
+  if (current.resetTime < now) {
+    rateLimiter.set(ip, { count: 1, resetTime: now + windowMs });
+    return false;
+  }
+  
+  if (current.count >= maxRequests) {
+    return true;
+  }
+  
+  current.count++;
+  return false;
+}
+
+// CORS preflight handler
+export const OPTIONS: APIRoute = async () => {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400'
+    }
+  });
+};
+
+export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
+  const startTime = Date.now();
+  const requestId = crypto.randomUUID().substring(0, 8);
+  const clientIP = clientAddress || request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown';
+  
+  console.log(`[${requestId}] Contact form request from ${clientIP}`);
+  
+  try {
+    // Rate limiting
+    if (isRateLimited(clientIP)) {
+      console.warn(`[${requestId}] Rate limit exceeded for IP: ${clientIP}`);
       return new Response(
-        JSON.stringify({ error: 'Name, service type, and message are required' }),
+        JSON.stringify({ 
+          error: 'Too many requests. Please wait a minute before trying again.',
+          retryAfter: 60
+        }),
         { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
+          status: 429,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Retry-After': '60',
+            'Access-Control-Allow-Origin': '*'
+          }
         }
       );
+    }
+    const formData = await request.formData();
+    
+    // Extract and sanitize form data
+    const rawName = formData.get('name') as string;
+    const rawEmail = formData.get('email') as string;
+    const rawPhone = formData.get('phone') as string;
+    const rawServiceType = formData.get('service_type') as string;
+    const rawMessage = formData.get('message') as string;
+
+    // Sanitize inputs
+    const name = escapeHtml(rawName?.trim() || '');
+    const email = rawEmail?.trim() || '';
+    const phone = escapeHtml(rawPhone?.trim() || '');
+    const service_type = escapeHtml(rawServiceType?.trim() || '');
+    const message = escapeHtml(rawMessage?.trim() || '');
+
+    // Validation
+    const errors: string[] = [];
+    
+    // Required field validation
+    if (!name || name.length < 2) {
+      errors.push('Name must be at least 2 characters long');
+    }
+    
+    if (name.length > 100) {
+      errors.push('Name must be less than 100 characters');
+    }
+    
+    if (!service_type) {
+      errors.push('Service type is required');
+    }
+    
+    const validServiceTypes = [
+      'Auto & Home Systems Repair',
+      'Logistics & Adaptive Operations', 
+      'AI Tools & Digital Infrastructure',
+      'Emergency & Crisis Response',
+      'General Inquiry',
+      'Partnership Opportunity'
+    ];
+    
+    if (service_type && !validServiceTypes.includes(service_type)) {
+      errors.push('Invalid service type selected');
+    }
+    
+    if (!message || message.length < 10) {
+      errors.push('Message must be at least 10 characters long');
+    }
+    
+    if (message.length > 2000) {
+      errors.push('Message must be less than 2000 characters');
     }
 
     // Email validation (only if provided)
     if (email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid email format' }),
-          { 
-            status: 400,
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
+      if (!emailRegex.test(email) || email.length > 254) {
+        errors.push('Please provide a valid email address');
       }
+    }
+    
+    // Phone validation (only if provided)
+    if (phone) {
+      const phoneRegex = /^[\+]?[\s\-\(\)]*([0-9][\s\-\(\)]*){10,14}$/;
+      if (!phoneRegex.test(phone)) {
+        errors.push('Please provide a valid phone number');
+      }
+    }
+    
+    // Return validation errors
+    if (errors.length > 0) {
+      console.warn(`[${requestId}] Validation errors:`, errors);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Validation failed',
+          details: errors
+        }),
+        { 
+          status: 400,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
+      );
     }
 
     // Check for required environment variables
@@ -129,6 +255,9 @@ Solutions That Outlast the Storm - Reply directly to contact the customer.
       console.log('❌ MG_API_KEY, MG_DOMAIN, or ADMIN_EMAIL not configured, skipping notification');
     }
 
+    const duration = Date.now() - startTime;
+    console.log(`[${requestId}] Contact form submission successful (${duration}ms) - Service: ${service_type}`);
+    
     return new Response(
       JSON.stringify({ 
         message: 'Thank you for your submission! We\'ll get back to you within 24 hours.',
@@ -136,12 +265,17 @@ Solutions That Outlast the Storm - Reply directly to contact the customer.
       }),
       { 
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
       }
     );
 
   } catch (error) {
-    console.error('Contact form error:', error);
+    const duration = Date.now() - startTime;
+    console.error(`[${requestId}] Contact form error (${duration}ms):`, error);
+    
     return new Response(
       JSON.stringify({ 
         error: 'An error occurred. Please email harley@atlasdivisions.com directly.',
@@ -149,7 +283,10 @@ Solutions That Outlast the Storm - Reply directly to contact the customer.
       }),
       { 
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
       }
     );
   }

@@ -1,7 +1,7 @@
 ---
-export interface Props {
-	currentPath?: string;
-}
+import type { NavigationProps } from '../types';
+
+export type Props = NavigationProps;
 
 const { currentPath = '/' } = Astro.props;
 ---

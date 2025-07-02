@@ -35,3 +35,6 @@ web-bundles/
 
 # Configuration files with sensitive data
 wrangler.toml
+
+# AI Stuff
+CLAUDE.md
