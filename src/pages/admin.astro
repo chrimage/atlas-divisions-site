@@ -549,7 +549,7 @@ if (Astro.request.method === 'POST') {
                                         {sub.message.substring(0, 50)}{sub.message.length > 50 ? '...' : ''}
                                     </div>
                                     {sub.message.length > 50 && (
-                                        <button class="message-expand-btn" onclick={`showMessageModal('${sub.id}')`}>
+                                        <button class="message-expand-btn" data-submission-id={sub.id}>
                                             Read More
                                         </button>
                                     )}
@@ -661,6 +661,25 @@ if (Astro.request.method === 'POST') {
                     closeMessageModal();
                 }
             });
+
+            // Add event listeners to all Read More buttons
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('DOM loaded, setting up Read More buttons');
+                const readMoreButtons = document.querySelectorAll('.message-expand-btn');
+                console.log('Found', readMoreButtons.length, 'Read More buttons');
+                
+                readMoreButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const submissionId = this.getAttribute('data-submission-id');
+                        console.log('Button clicked, submission ID:', submissionId);
+                        showMessageModal(submissionId);
+                    });
+                });
+            });
+
+            // Make functions globally available for debugging
+            window.showMessageModal = showMessageModal;
+            window.closeMessageModal = closeMessageModal;
         </script>
     </div>
 </body>
