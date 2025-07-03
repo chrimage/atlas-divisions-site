@@ -18,7 +18,7 @@ const { currentPath = '/' } = Astro.props;
 			<a href="/" class={currentPath === '/' ? 'nav-link active' : 'nav-link'}>Home</a>
 			<a href="/about" class={currentPath === '/about' ? 'nav-link active' : 'nav-link'}>About</a>
 			<a href="/services" class={currentPath === '/services' ? 'nav-link active' : 'nav-link'}>Services</a>
-			<a href="#contact" class="nav-link contact-link">Contact</a>
+			<a href="/#contact" class="nav-link contact-link">Contact</a>
 		</div>
 
 		<button class="mobile-menu-toggle" aria-label="Toggle mobile menu">
