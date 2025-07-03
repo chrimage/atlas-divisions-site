@@ -69,11 +69,11 @@ if (!user) {
     });
 }
 
-// Get submissions from database
-const env = Astro.locals.runtime.env;
+// Get submissions from database - access Cloudflare runtime safely
+const env = Astro.locals.runtime?.env;
 let submissions: any[] = [];
 
-if (env.DB) {
+if (env?.DB) {
     try {
         const { results } = await env.DB.prepare(`
             SELECT * FROM submissions ORDER BY created_at DESC
@@ -92,7 +92,7 @@ if (Astro.request.method === 'POST') {
     
     if (id && status && ['new', 'in_progress', 'resolved', 'cancelled'].includes(status)) {
         try {
-            await env.DB.prepare(`
+            await env?.DB.prepare(`
                 UPDATE submissions SET status = ?, updated_at = ? WHERE id = ?
             `).bind(status, new Date().toISOString(), id).run();
             

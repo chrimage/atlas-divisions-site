@@ -168,11 +168,11 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     }
 
     // Check for required environment variables
-    const env = locals.runtime.env;
-    const mgApiKey = env.MG_API_KEY;
-    const mgDomain = env.MG_DOMAIN;
-    const fromEmailName = env.FROM_EMAIL_NAME || 'contact';
-    const adminEmail = env.ADMIN_EMAIL || 'harley@atlasdivisions.com';
+    const env = locals.runtime?.env;
+    const mgApiKey = env?.MG_API_KEY;
+    const mgDomain = env?.MG_DOMAIN;
+    const fromEmailName = env?.FROM_EMAIL_NAME || 'contact';
+    const adminEmail = env?.ADMIN_EMAIL || 'harley@atlasdivisions.com';
 
     // Create submission record
     const submission = {
@@ -187,9 +187,9 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     };
 
     // Save to database if available
-    if (env.DB) {
+    if (env?.DB) {
       try {
-        await env.DB.prepare(`
+        await env?.DB.prepare(`
           INSERT INTO submissions (id, name, email, phone, service_type, message, status, created_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
@@ -223,7 +223,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
 ${message}
 
 🕒 Submitted: ${new Date(submission.timestamp).toLocaleString()}
-🌐 Environment: ${env.ENVIRONMENT || 'production'}
+🌐 Environment: ${env?.ENVIRONMENT || 'production'}
 📝 Submission ID: ${submission.id}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

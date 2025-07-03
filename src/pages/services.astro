@@ -8,7 +8,7 @@ import ServiceCard from '../components/ServiceCard.astro';
 		<section class="hero-section">
 			<div class="container">
 				<div class="hero-content">
-					<h1>Our Services</h1>
+					<h1>⚙️ Our Services</h1>
 					<p class="hero-subtitle">Comprehensive solutions for complex challenges</p>
 				</div>
 			</div>
@@ -18,7 +18,7 @@ import ServiceCard from '../components/ServiceCard.astro';
 			<div class="container">
 				<div class="services-grid">
 					<div class="service-detail">
-						<h2>Auto & Home Systems Repair</h2>
+						<h2>🔧 Auto & Home Systems Repair</h2>
 						<p class="service-intro">
 							Practical, reliable repairs that last. From automotive diagnostics to home system 
 							troubleshooting—we fix it right the first time with transparent pricing and 
@@ -49,7 +49,7 @@ import ServiceCard from '../components/ServiceCard.astro';
 					</div>
 
 					<div class="service-detail">
-						<h2>Logistics & Adaptive Operations</h2>
+						<h2>📦 Logistics & Adaptive Operations</h2>
 						<p class="service-intro">
 							Streamlined operations for small businesses and complex projects. We turn chaos 
 							into coordinated action with tailored solutions that scale with your needs.
@@ -79,7 +79,7 @@ import ServiceCard from '../components/ServiceCard.astro';
 					</div>
 
 					<div class="service-detail">
-						<h2>AI Tools & Digital Infrastructure</h2>
+						<h2>🤖 AI Tools & Digital Infrastructure</h2>
 						<p class="service-intro">
 							Transparent AI integration that actually serves your needs. No black boxes, 
 							no vendor lock-in—just practical digital solutions that enhance human capability.
@@ -109,7 +109,7 @@ import ServiceCard from '../components/ServiceCard.astro';
 					</div>
 
 					<div class="service-detail emergency">
-						<h2>Emergency & Crisis Response</h2>
+						<h2>🚨 Emergency & Crisis Response</h2>
 						<p class="service-intro">
 							When things go wrong, you need someone who can think clearly under pressure. 
 							Available for urgent situations that require immediate adaptive response.
@@ -144,7 +144,7 @@ import ServiceCard from '../components/ServiceCard.astro';
 		<section class="contact-section">
 			<div class="container">
 				<div class="contact-content">
-					<h2>Ready to Get Started?</h2>
+					<h2>🚀 Ready to Get Started?</h2>
 					<p>Every challenge is unique. Let's discuss your specific situation and how we can help.</p>
 					<div class="contact-options">
 						<a href="mailto:harley@atlasdivisions.com?subject=Atlas%20Divisions%20Services%20Inquiry" class="contact-button primary">
@@ -254,7 +254,7 @@ import ServiceCard from '../components/ServiceCard.astro';
 	}
 
 	.service-features li::before {
-		content: '✓';
+		content: '✅';
 		position: absolute;
 		left: 0;
 		color: var(--color-accent-gold);
@@ -262,6 +262,7 @@ import ServiceCard from '../components/ServiceCard.astro';
 	}
 
 	.service-detail.emergency .service-features li::before {
+		content: '🚨';
 		color: #dc143c;
 	}
 
