@@ -64,25 +64,17 @@ function copyEmailFromHeader() {
 }
 
 function fallbackCopyEmailHeader(email: string, btn: HTMLButtonElement | null) {
-  try {
-    const textArea = document.createElement('textarea');
-    textArea.value = email;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
-    if (btn) {
-      const originalText = btn.textContent;
-      btn.textContent = '✓ Copied!';
-      btn.style.color = 'var(--color-accent-teal)';
-      setTimeout(() => {
-        btn.textContent = originalText;
-        btn.style.color = '';
-      }, 2000);
-    }
-  } catch (err) {
-    console.error('Fallback copy failed:', err);
-    alert('Copy to clipboard failed. Please copy manually.');
+  // Show the email in the button for easy manual copying
+  if (btn) {
+    const originalText = btn.textContent;
+    btn.textContent = `📋 ${email}`;
+    btn.style.fontSize = '0.85rem';
+    btn.style.color = 'var(--color-accent-gold)';
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.fontSize = '';
+      btn.style.color = '';
+    }, 4000);
   }
 }
 
