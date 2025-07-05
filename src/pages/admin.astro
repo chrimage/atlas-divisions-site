@@ -1,6 +1,4 @@
 ---
-import Layout from '../layouts/Layout.astro';
-
 // Simple Cloudflare Access auth function
 function extractUserFromAccessToken(request: Request) {
     try {
@@ -31,15 +29,6 @@ function extractUserFromAccessToken(request: Request) {
     }
 }
 
-// HTML escaping utility for security
-function escapeHtml(unsafe: string) {
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
 
 // Check authentication
 const user = extractUserFromAccessToken(Astro.request);

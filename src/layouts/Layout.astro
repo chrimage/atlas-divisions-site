@@ -1,6 +1,6 @@
 ---
 import Navigation from '../components/Navigation.astro';
-import { ViewTransitions } from 'astro:transitions';
+import { ClientRouter } from 'astro:transitions';
 import type { LayoutProps } from '../types';
 
 export type Props = LayoutProps;
@@ -54,7 +54,7 @@ const currentPath = Astro.url.pathname;
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 		
 		<!-- View Transitions for smooth navigation -->
-		<ViewTransitions />
+		<ClientRouter />
 	</head>
 	<body>
 		<Navigation currentPath={currentPath} />

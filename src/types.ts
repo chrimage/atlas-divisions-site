@@ -7,6 +7,7 @@ export interface ServiceCardProps {
   ctaText: string;
   ctaLink: string;
   isEmergency?: boolean;
+  emoji?: string;
 }
 
 export interface NavigationProps {

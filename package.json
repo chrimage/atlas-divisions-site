@@ -24,6 +24,7 @@
     "typescript": "^5.8.3"
   },
   "devDependencies": {
+    "@types/escape-html": "^1.0.4",
     "wrangler": "^4.20.1"
   }
 }

@@ -6,7 +6,6 @@ const rateLimiter = new Map<string, { count: number; resetTime: number }>();
 
 function isRateLimited(ip: string, maxRequests: number = 5, windowMs: number = 60000): boolean {
   const now = Date.now();
-  const windowStart = now - windowMs;
   
   // Clean old entries
   for (const [key, value] of rateLimiter.entries()) {
@@ -48,6 +47,7 @@ export const OPTIONS: APIRoute = async () => {
   });
 };
 
+// Only allow POST requests - other methods will automatically get 405 Method Not Allowed
 export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID().substring(0, 8);
@@ -74,16 +74,79 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
         }
       );
     }
-    const formData = await request.formData();
-    
-    // Extract raw form data
-    const rawName = formData.get('name') as string;
-    const rawEmail = formData.get('email') as string;
-    const rawPhone = formData.get('phone') as string;
-    const rawServiceType = formData.get('service_type') as string;
-    const rawMessage = formData.get('message') as string;
 
-    // Validate service type first (before any sanitization)
+    // Parse request body
+    let body: any;
+    const contentType = request.headers.get('content-type');
+    
+    if (contentType?.includes('application/json')) {
+      body = await request.json();
+    } else if (contentType?.includes('application/x-www-form-urlencoded') || contentType?.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      body = Object.fromEntries(formData.entries());
+    } else {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid content type. Expected application/json, application/x-www-form-urlencoded, or multipart/form-data'
+        }),
+        { 
+          status: 400,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        }
+      );
+    }
+    
+    // Extract and validate required fields
+    const rawName = body.name as string;
+    const rawEmail = body.email as string;
+    const rawMessage = body.message as string;
+    const rawPhone = body.phone as string;
+    const rawServiceType = body.service_type as string;
+
+    // Validation errors array
+    const errors: string[] = [];
+    
+    // Validate required fields: name, email, message
+    if (!rawName || typeof rawName !== 'string' || rawName.trim().length < 2) {
+      errors.push('Name is required and must be at least 2 characters long');
+    }
+    
+    if (rawName && rawName.trim().length > 100) {
+      errors.push('Name must be less than 100 characters');
+    }
+    
+    if (!rawEmail || typeof rawEmail !== 'string' || !rawEmail.trim()) {
+      errors.push('Email is required');
+    }
+    
+    if (!rawMessage || typeof rawMessage !== 'string' || rawMessage.trim().length < 10) {
+      errors.push('Message is required and must be at least 10 characters long');
+    }
+    
+    if (rawMessage && rawMessage.trim().length > 2000) {
+      errors.push('Message must be less than 2000 characters');
+    }
+
+    // Email validation (required field)
+    if (rawEmail && rawEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(rawEmail.trim()) || rawEmail.trim().length > 254) {
+        errors.push('Please provide a valid email address');
+      }
+    }
+    
+    // Phone validation (optional field)
+    if (rawPhone && rawPhone.trim()) {
+      const phoneRegex = /^[\+]?[\s\-\(\)]*([0-9][\s\-\(\)]*){10,14}$/;
+      if (!phoneRegex.test(rawPhone.trim())) {
+        errors.push('Please provide a valid phone number');
+      }
+    }
+
+    // Service type validation
     const validServiceTypes = [
       'Auto & Home Systems Repair',
       'Logistics & Adaptive Operations', 
@@ -94,59 +157,10 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     ];
     
     const trimmedServiceType = rawServiceType?.trim() || '';
-    
-    // Validation
-    const errors: string[] = [];
-    
-    // Required field validation
-    if (!rawName?.trim() || rawName.trim().length < 2) {
-      errors.push('Name must be at least 2 characters long');
-    }
-    
-    if (rawName?.trim().length > 100) {
-      errors.push('Name must be less than 100 characters');
-    }
-    
     if (!trimmedServiceType) {
       errors.push('Service type is required');
     } else if (!validServiceTypes.includes(trimmedServiceType)) {
       errors.push('Invalid service type selected');
-    }
-    
-    // Sanitize inputs AFTER validation
-    const name = escapeHtml(rawName?.trim() || '');
-    const email = rawEmail?.trim() || '';
-    const phone = escapeHtml(rawPhone?.trim() || '');
-    const service_type = trimmedServiceType; // Already validated, safe to use
-    const message = escapeHtml(rawMessage?.trim() || '');
-    
-    if (!message || message.length < 10) {
-      errors.push('Message must be at least 10 characters long');
-    }
-    
-    if (message.length > 2000) {
-      errors.push('Message must be less than 2000 characters');
-    }
-
-    // Require at least email or phone for contact
-    if (!email && !phone) {
-      errors.push('Please provide either an email address or phone number so we can reach you');
-    }
-
-    // Email validation (only if provided)
-    if (email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email) || email.length > 254) {
-        errors.push('Please provide a valid email address');
-      }
-    }
-    
-    // Phone validation (only if provided)
-    if (phone) {
-      const phoneRegex = /^[\+]?[\s\-\(\)]*([0-9][\s\-\(\)]*){10,14}$/;
-      if (!phoneRegex.test(phone)) {
-        errors.push('Please provide a valid phone number');
-      }
     }
     
     // Return validation errors
@@ -167,6 +181,13 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       );
     }
 
+    // Sanitize all user inputs with escape-html
+    const name = escapeHtml(rawName.trim());
+    const email = escapeHtml(rawEmail.trim());
+    const message = escapeHtml(rawMessage.trim());
+    const phone = rawPhone ? escapeHtml(rawPhone.trim()) : '';
+    const service_type = trimmedServiceType; // Already validated against whitelist
+
     // Check for required environment variables
     const env = locals.runtime?.env;
     const mgApiKey = env?.MG_API_KEY;
@@ -177,11 +198,11 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     // Create submission record
     const submission = {
       id: crypto.randomUUID(),
-      name: name.trim(),
-      email: email ? email.trim() : null,
-      phone: phone ? phone.trim() : null,
-      service_type: service_type.trim(),
-      message: message.trim(),
+      name: name,
+      email: email,
+      phone: phone || null,
+      service_type: service_type,
+      message: message,
       status: 'new',
       timestamp: new Date().toISOString()
     };
@@ -189,16 +210,16 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     // Save to database if available
     if (env?.DB) {
       try {
-        await env?.DB.prepare(`
+        await env.DB.prepare(`
           INSERT INTO submissions (id, name, email, phone, service_type, message, status, created_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           submission.id, submission.name, submission.email, submission.phone,
           submission.service_type, submission.message, submission.status, submission.timestamp
         ).run();
-        console.log('Submission saved to database:', submission.id);
+        console.log(`[${requestId}] Submission saved to database: ${submission.id}`);
       } catch (dbError) {
-        console.error('Database save error:', dbError);
+        console.error(`[${requestId}] Database save error:`, dbError);
         // Don't fail the request if database save fails
       }
     }
@@ -215,7 +236,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 👤 Customer: ${name}
-📧 Email: ${email || 'Not provided'}
+📧 Email: ${email}
 📱 Phone: ${phone || 'Not provided'}
 🔧 Service: ${service_type}
 
@@ -251,19 +272,19 @@ Solutions That Outlast the Storm - Reply directly to contact the customer.
         
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`❌ Email failed: ${response.status} ${response.statusText}`);
-          console.error(`❌ Mailgun domain: ${mgDomain}`);
-          console.error(`❌ From email: ${fromEmail}`);
-          console.error(`❌ Error details: ${errorText}`);
+          console.error(`[${requestId}] Email failed: ${response.status} ${response.statusText}`);
+          console.error(`[${requestId}] Mailgun domain: ${mgDomain}`);
+          console.error(`[${requestId}] From email: ${fromEmail}`);
+          console.error(`[${requestId}] Error details: ${errorText}`);
         } else {
-          console.log(`✅ Email notification sent successfully for submission ${submission.id}`);
+          console.log(`[${requestId}] Email notification sent successfully for submission ${submission.id}`);
         }
       } catch (emailError) {
-        console.error('Mailgun email error:', emailError);
+        console.error(`[${requestId}] Mailgun email error:`, emailError);
         // Don't fail the request if email fails
       }
     } else {
-      console.log('❌ MG_API_KEY, MG_DOMAIN, or ADMIN_EMAIL not configured, skipping notification');
+      console.log(`[${requestId}] MG_API_KEY, MG_DOMAIN, or ADMIN_EMAIL not configured, skipping notification`);
     }
 
     const duration = Date.now() - startTime;
@@ -289,7 +310,7 @@ Solutions That Outlast the Storm - Reply directly to contact the customer.
     
     return new Response(
       JSON.stringify({ 
-        error: 'An error occurred. Please email harley@atlasdivisions.com directly.',
+        error: 'An internal server error occurred. Please try again later or email harley@atlasdivisions.com directly.',
         fallbackEmail: 'harley@atlasdivisions.com'
       }),
       { 

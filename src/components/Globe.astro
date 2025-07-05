@@ -12,9 +12,27 @@
 
 <script>
   // Dynamic import with loading state and error handling
-  let THREE = null;
+  let THREE: any = null;
 
   class AtlasGlobe {
+    scene: any;
+    camera: any;
+    renderer: any;
+    globeMesh: any;
+    isDragging: boolean;
+    previousMousePosition: { x: number; y: number };
+    rotationVelocity: { x: number; y: number };
+    autoRotationSpeed: number;
+    friction: number;
+    rotationSpeed: number;
+    atlasColors: {
+      ocean: string;
+      land: string;
+      stroke: string;
+      atmosphere: number;
+      light: number;
+    };
+
     constructor() {
       this.scene = null;
       this.camera = null;
@@ -47,7 +65,7 @@
       }
       
       try {
-        await this.createScene();
+        this.createScene();
         this.setupEventListeners();
       } catch (error) {
         console.error('Globe initialization failed:', error);
@@ -139,6 +157,7 @@
       canvas.width = 2048;
       canvas.height = 1024;
       const ctx = canvas.getContext('2d');
+      if (!ctx) return new THREE.CanvasTexture(canvas);
       
       ctx.fillStyle = this.atlasColors.ocean;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -158,26 +177,26 @@
       return texture;
     }
     
-    drawWorldMap(ctx, geoData, width, height) {
+    drawWorldMap(ctx: any, geoData: any, width: number, height: number) {
       ctx.fillStyle = this.atlasColors.land;
       ctx.strokeStyle = this.atlasColors.stroke;
       ctx.lineWidth = 1;
       
-      geoData.features.forEach(feature => {
+      geoData.features.forEach((feature: any) => {
         if (feature.geometry.type === 'Polygon') {
           this.drawPolygon(ctx, feature.geometry.coordinates, width, height);
         } else if (feature.geometry.type === 'MultiPolygon') {
-          feature.geometry.coordinates.forEach(polygon => {
+          feature.geometry.coordinates.forEach((polygon: any) => {
             this.drawPolygon(ctx, polygon, width, height);
           });
         }
       });
     }
     
-    drawPolygon(ctx, coordinates, width, height) {
-      coordinates.forEach(ring => {
+    drawPolygon(ctx: any, coordinates: any, width: number, height: number) {
+      coordinates.forEach((ring: any) => {
         ctx.beginPath();
-        ring.forEach((coord, index) => {
+        ring.forEach((coord: any, index: number) => {
           const x = ((coord[0] + 180) / 360) * width;
           const y = ((90 - coord[1]) / 180) * height;
           
@@ -193,7 +212,7 @@
       });
     }
     
-    drawFallbackMap(ctx, width, height) {
+    drawFallbackMap(ctx: any, width: number, height: number) {
       const continents = [
         { x: 0.2, y: 0.3, w: 0.25, h: 0.4 }, // North America
         { x: 0.25, y: 0.5, w: 0.15, h: 0.35 }, // South America
@@ -246,12 +265,13 @@
       }
     }
     
-    onMouseDown(event) {
+    onMouseDown(event: MouseEvent) {
       this.startDragging(event.clientX, event.clientY);
-      document.getElementById('globe-canvas').style.cursor = 'grabbing';
+      const canvas = document.getElementById('globe-canvas');
+      if (canvas) canvas.style.cursor = 'grabbing';
     }
     
-    onMouseMove(event) {
+    onMouseMove(event: MouseEvent) {
       if (this.isDragging) {
         this.updateRotation(event.clientX, event.clientY);
       }
@@ -259,15 +279,17 @@
     
     onMouseUp() {
       this.stopDragging();
-      document.getElementById('globe-canvas').style.cursor = 'grab';
+      const canvas = document.getElementById('globe-canvas');
+      if (canvas) canvas.style.cursor = 'grab';
     }
     
     onMouseLeave() {
       this.stopDragging();
-      document.getElementById('globe-canvas').style.cursor = 'grab';
+      const canvas = document.getElementById('globe-canvas');
+      if (canvas) canvas.style.cursor = 'grab';
     }
     
-    onTouchStart(event) {
+    onTouchStart(event: TouchEvent) {
       event.preventDefault();
       if (event.touches.length === 1) {
         const touch = event.touches[0];
@@ -275,7 +297,7 @@
       }
     }
     
-    onTouchMove(event) {
+    onTouchMove(event: TouchEvent) {
       event.preventDefault();
       if (this.isDragging && event.touches.length === 1) {
         const touch = event.touches[0];
@@ -283,14 +305,15 @@
       }
     }
     
-    onTouchEnd(event) {
+    onTouchEnd(event: TouchEvent) {
       event.preventDefault();
       this.stopDragging();
     }
     
-    startDragging(clientX, clientY) {
+    startDragging(clientX: number, clientY: number) {
       this.isDragging = true;
       const container = document.getElementById('globe-canvas');
+      if (!container) return;
       const rect = container.getBoundingClientRect();
       this.previousMousePosition = {
         x: clientX - rect.left,
@@ -298,8 +321,9 @@
       };
     }
     
-    updateRotation(clientX, clientY) {
+    updateRotation(clientX: number, clientY: number) {
       const container = document.getElementById('globe-canvas');
+      if (!container) return;
       const rect = container.getBoundingClientRect();
       const currentMousePosition = {
         x: clientX - rect.left,
@@ -361,7 +385,7 @@
   }
 
   // Initialize globe when component loads with dynamic import
-  let atlasGlobe = null;
+  let atlasGlobe: AtlasGlobe | null = null; // Used in init function below
   
   async function loadThreeJS() {
     try {
