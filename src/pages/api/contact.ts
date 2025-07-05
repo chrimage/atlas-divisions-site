@@ -1,4 +1,3 @@
-import type { APIRoute } from 'astro';
 import escapeHtml from 'escape-html';
 
 // Simple in-memory rate limiter (for production, use Redis or similar)
@@ -35,7 +34,7 @@ function isRateLimited(ip: string, maxRequests: number = 5, windowMs: number = 6
 }
 
 // CORS preflight handler
-export const OPTIONS: APIRoute = async () => {
+export const OPTIONS = async () => {
   return new Response(null, {
     status: 200,
     headers: {
@@ -48,7 +47,7 @@ export const OPTIONS: APIRoute = async () => {
 };
 
 // Only allow POST requests - other methods will automatically get 405 Method Not Allowed
-export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
+export const POST = async ({ request, locals, clientAddress }: any) => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID().substring(0, 8);
   const clientIP = clientAddress || request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown';

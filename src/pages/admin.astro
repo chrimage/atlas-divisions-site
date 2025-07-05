@@ -59,7 +59,7 @@ if (!user) {
 }
 
 // Get submissions from database - access Cloudflare runtime safely
-const env = Astro.locals.runtime?.env;
+const env = (Astro.locals as any).runtime?.env;
 let submissions: any[] = [];
 
 if (env?.DB) {

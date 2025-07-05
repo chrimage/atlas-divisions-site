@@ -4,11 +4,10 @@
 declare module 'escape-html';
 
 // Extend Astro types
-import 'astro';
 
 declare module 'astro' {
   interface Locals {
-    runtime: {
+    runtime?: {
       env: {
         [key: string]: string | undefined;
         DB?: unknown;

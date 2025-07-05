@@ -17,7 +17,7 @@ const { title, description, features, ctaText, ctaLink, isEmergency = false, emo
 	
 	<div class="features-list">
 		<ul>
-			{features.map(feature => (
+			{features.map((feature: string) => (
 				<li>{feature}</li>
 			))}
 		</ul>
