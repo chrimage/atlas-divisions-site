@@ -99,6 +99,7 @@
 			textArea.value = email;
 			document.body.appendChild(textArea);
 			textArea.select();
+			// @ts-ignore
 			document.execCommand('copy');
 			document.body.removeChild(textArea);
 			

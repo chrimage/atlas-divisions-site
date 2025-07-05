@@ -604,7 +604,7 @@ if (Astro.request.method === 'POST') {
             </div>
         </div>
 
-        <script define:vars={{ submissions }}>
+        <script is:inline define:vars={{ submissions }}>
             // Store submission data for modal
             const submissionData = submissions.map(sub => ({
                 id: sub.id,
