@@ -387,6 +387,17 @@
   // Initialize globe when component loads with dynamic import
   let atlasGlobe: AtlasGlobe | null = null; // Used in init function below
   
+  function cleanupGlobe() {
+    if (atlasGlobe && atlasGlobe.renderer) {
+      // Dispose of Three.js objects to prevent memory leaks
+      atlasGlobe.renderer.dispose();
+      if (atlasGlobe.scene) {
+        atlasGlobe.scene.clear();
+      }
+      atlasGlobe = null;
+    }
+  }
+  
   async function loadThreeJS() {
     try {
       const threeModule = await import('three');
@@ -398,7 +409,14 @@
     }
   }
   
-  document.addEventListener('DOMContentLoaded', async () => {
+  async function initializeGlobe() {
+    // Clean up any existing globe instance first
+    cleanupGlobe();
+    
+    // Check if globe container exists (only initialize if on home page)
+    const container = document.getElementById('globe-canvas');
+    if (!container) return;
+    
     // Check for reduced motion preference
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     
@@ -442,7 +460,16 @@
         }
       }
     }, 100);
-  });
+  }
+
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', initializeGlobe);
+  
+  // Reinitialize on view transitions (for client-side routing)
+  document.addEventListener('astro:page-load', initializeGlobe);
+  
+  // Clean up when navigating away
+  document.addEventListener('astro:before-preparation', cleanupGlobe);
 </script>
 
 <style>
