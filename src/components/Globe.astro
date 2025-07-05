@@ -386,6 +386,7 @@
 
   // Initialize globe when component loads with dynamic import
   let atlasGlobe: AtlasGlobe | null = null; // Used in init function below
+  let isInitializing = false; // Prevent duplicate initialization
   
   function cleanupGlobe() {
     if (atlasGlobe && atlasGlobe.renderer) {
@@ -396,6 +397,7 @@
       }
       atlasGlobe = null;
     }
+    isInitializing = false;
   }
   
   async function loadThreeJS() {
@@ -410,22 +412,22 @@
   }
   
   async function initializeGlobe() {
-    // Clean up any existing globe instance first
-    cleanupGlobe();
+    // Prevent duplicate initialization
+    if (isInitializing || atlasGlobe) return;
     
     // Check if globe container exists (only initialize if on home page)
     const container = document.getElementById('globe-canvas');
     if (!container) return;
+    
+    isInitializing = true;
     
     // Check for reduced motion preference
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     
     if (prefersReducedMotion) {
       // Show static globe for users who prefer reduced motion
-      const container = document.getElementById('globe-canvas');
-      if (container) {
-        container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#d4af37;font-size:8rem;">🌍</div>';
-      }
+      container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#d4af37;font-size:8rem;">🌍</div>';
+      isInitializing = false;
       return;
     }
     
@@ -434,10 +436,8 @@
     
     if (!threeLoaded) {
       // Fallback to static globe emoji
-      const container = document.getElementById('globe-canvas');
-      if (container) {
-        container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#d4af37;font-size:8rem;">🌍</div>';
-      }
+      container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#d4af37;font-size:8rem;">🌍</div>';
+      isInitializing = false;
       return;
     }
     
@@ -446,6 +446,7 @@
       try {
         atlasGlobe = new AtlasGlobe();
         console.log('Enhanced Atlas Globe initialized successfully');
+        isInitializing = false;
       } catch (error) {
         console.error('Atlas Globe initialization failed:', error);
         // Show error state
@@ -458,6 +459,7 @@
             </div>
           `;
         }
+        isInitializing = false;
       }
     }, 100);
   }
