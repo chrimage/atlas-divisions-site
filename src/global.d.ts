@@ -1,7 +1,6 @@
 // Global type declarations
 
-// Allow dynamic import of Three.js and escape-html without errors
-declare module 'three';
+// Allow dynamic import of escape-html without errors
 declare module 'escape-html';
 
 // Extend Astro types

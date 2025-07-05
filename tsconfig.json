@@ -7,7 +7,7 @@
     "paths": {
       "~/*": ["src/*"]
     },
-    "types": ["node", "three"],
+    "types": ["node"],
     "allowJs": true,
     "checkJs": false
   },
