@@ -185,8 +185,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
           )
           .run();
         console.log('Submission saved to database:', submission.id);
-      } catch {
-        console.error('Database save error');
+      } catch (e) {
+        console.error('Database save error:', e);
       }
     }
 
