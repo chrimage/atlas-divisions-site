@@ -3,12 +3,15 @@ import type { ServiceCardProps } from '../types';
 
 export type Props = ServiceCardProps;
 
-const { title, description, features, ctaText, ctaLink, isEmergency = false } = Astro.props;
+const { title, description, features, ctaText, ctaLink, isEmergency = false, emoji = '' } = Astro.props;
 ---
 
 <div class={`service-card ${isEmergency ? 'emergency' : ''}`}>
 	<div class="card-header">
-		<h3 class="card-title">{title}</h3>
+		<h3 class="card-title">
+			{emoji && <span class="service-emoji">{emoji}</span>}
+			{title}
+		</h3>
 		<p class="card-description">{description}</p>
 	</div>
 	
@@ -89,6 +92,14 @@ const { title, description, features, ctaText, ctaLink, isEmergency = false } = 
 		margin-bottom: 1rem;
 		position: relative;
 		z-index: 1;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.service-emoji {
+		font-size: 1.5rem;
+		flex-shrink: 0;
 	}
 
 	.card-description {
@@ -120,7 +131,7 @@ const { title, description, features, ctaText, ctaLink, isEmergency = false } = 
 	}
 
 	.features-list li::before {
-		content: '✓';
+		content: '✅';
 		position: absolute;
 		left: 0;
 		color: var(--color-accent-gold);
@@ -128,6 +139,7 @@ const { title, description, features, ctaText, ctaLink, isEmergency = false } = 
 	}
 
 	.service-card.emergency .features-list li::before {
+		content: '🚨';
 		color: #dc143c;
 	}
 

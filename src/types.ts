@@ -7,6 +7,7 @@ export interface ServiceCardProps {
   ctaText: string;
   ctaLink: string;
   isEmergency?: boolean;
+  emoji?: string;
 }
 
 export interface NavigationProps {
@@ -59,4 +60,31 @@ export interface GlobeConfig {
 
 export interface ThreeJSError extends Error {
   source?: 'initialization' | 'rendering' | 'interaction';
+}
+
+// Cloudflare Runtime Types
+export interface CloudflareEnv {
+  DB?: any; // D1 Database
+  [key: string]: any; // Other environment variables
+}
+
+export interface CloudflareRuntime {
+  env: CloudflareEnv;
+  cf?: any; // Cloudflare request context
+  ctx?: any; // Execution context
+}
+
+// Astro Locals extension for Cloudflare
+declare global {
+  namespace App {
+    interface Locals {
+      runtime?: CloudflareRuntime;
+      env?: CloudflareEnv;
+      cloudflare?: {
+        env: CloudflareEnv;
+        cf?: any;
+        ctx?: any;
+      };
+    }
+  }
 }
