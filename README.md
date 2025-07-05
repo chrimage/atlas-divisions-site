@@ -4,15 +4,15 @@ A professional website for Captain Harley Miller's adaptive solutions company, f
 
 ![Atlas Divisions](https://img.shields.io/badge/Atlas-Divisions-gold?style=for-the-badge)
 ![Astro](https://img.shields.io/badge/Astro-5.9.3-orange?style=for-the-badge&logo=astro)
-![Three.js](https://img.shields.io/badge/Three.js-0.177.0-black?style=for-the-badge&logo=three.js)
+![Three.js](https://img.shields.io/badge/Three.js-CDN-black?style=for-the-badge&logo=three.js)
 ![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange?style=for-the-badge&logo=cloudflare)
 
 ## 🌍 Features
 
-- **Interactive 3D Globe**: Real-world map data with mouse interaction and smooth animations
+- **Interactive 3D Globe**: Real-world map data with mouse interaction and smooth animations (Three.js loaded via CDN)
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices
 - **Email Integration**: Contact form powered by Mailgun with database storage
-- **Modern Stack**: Built with Astro, TypeScript, and Three.js
+- **Modern Stack**: Built with Astro, TypeScript, and Three.js (CDN)
 - **Edge Deployment**: Optimized for Cloudflare Workers with global edge distribution
 - **Performance First**: Minimal JavaScript, fast loading, and efficient rendering
 
@@ -71,7 +71,7 @@ atlas-divisions-site/
 ├── src/
 │   ├── components/
 │   │   ├── Header.astro           # Hero section with globe and branding
-│   │   ├── Globe.astro            # Interactive Three.js globe animation
+│   │   ├── Globe.astro            # Interactive globe animation (Three.js via CDN)
 │   │   ├── Navigation.astro       # Site navigation component
 │   │   ├── ServiceSnapshot.astro  # Service cards container
 │   │   ├── ServiceCard.astro      # Individual service card
@@ -111,7 +111,7 @@ Dark minimalist design with subtle gradients, smooth animations, and professiona
 ## 🛠️ Tech Stack
 
 - **Framework**: [Astro](https://astro.build/) v5.9.3 with TypeScript (strict mode)
-- **3D Graphics**: [Three.js](https://threejs.org/) v0.177.0 for interactive globe
+- **3D Graphics**: [Three.js](https://threejs.org/) (CDN) for interactive globe
 - **Deployment**: [Cloudflare Workers](https://workers.cloudflare.com/) with edge distribution
 - **Database**: [Cloudflare D1](https://developers.cloudflare.com/d1/) for contact submissions
 - **Email**: [Mailgun](https://mailgun.com/) integration for contact form
@@ -127,6 +127,9 @@ The centerpiece interactive globe features:
 - **Responsive sizing** that adapts to screen size
 - **Performance optimized** canvas texture generation
 - **Atlas branding** using company gold/bronze color scheme
+
+**Implementation Note:**  
+Three.js is loaded via CDN in `public/js/globe.js`. There is no local Three.js dependency.
 
 ## 📧 Contact Form & Admin Panel
 

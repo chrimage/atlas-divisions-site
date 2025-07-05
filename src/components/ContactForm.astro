@@ -4,7 +4,7 @@
 
 <section class="contact" id="contact" aria-labelledby="contact-heading">
 	<div class="container">
-		<h2 class="section-title" id="contact-heading">💬 Tell Us What You're Facing</h2>
+		<h2 class="section-title" id="contact-heading">Tell Us What You're Facing</h2>
 		<div class="contact-content">
 			<div class="contact-intro">
 				<p>Ready to tackle your complex challenges? Reach out directly or describe your situation below.</p>
@@ -64,16 +64,16 @@
 					</div>
 					
 					<button type="submit" class="submit-button">
-						📤 Send Message
+						Send Message
 					</button>
 				</form>
 				
 				<div class="form-success" id="successMessage" style="display: none;">
 					<div class="success-content">
-						<span class="success-icon">✅</span>
-						<h3>🎉 Thank you for your message!</h3>
+						<span class="success-icon">✓</span>
+						<h3>Thank you for your message!</h3>
 						<p>For fastest response, please also email <strong>harley@atlasdivisions.com</strong> directly.</p>
-						<button class="copy-email-button" id="copyEmailSuccess">📋 Copy Email Address</button>
+						<button class="copy-email-button" id="copyEmailSuccess">Copy Email Address</button>
 					</div>
 				</div>
 			</div>
@@ -82,45 +82,48 @@
 </section>
 
 <script>
-	// Copy email function - modern approach
-	async function copyEmailToClipboard() {
-		const email = 'harley@atlasdivisions.com';
-		
-		try {
-			// Use modern clipboard API
-			await navigator.clipboard.writeText(email);
-			showCopyFeedback();
-		} catch (err) {
-			// Graceful fallback: show the email and instruction
-			const feedback = document.getElementById('copyFeedback');
-			if (feedback) {
-				feedback.textContent = `Copy: ${email}`;
-				feedback.style.display = 'inline';
-				feedback.style.background = '#d4af37';
-				feedback.style.color = '#000';
-				feedback.style.padding = '0.5rem';
-				feedback.style.borderRadius = '4px';
-				setTimeout(() => {
-					feedback.style.display = 'none';
-					feedback.textContent = 'Copied!';
-					feedback.style.background = '';
-					feedback.style.color = '';
-					feedback.style.padding = '';
-					feedback.style.borderRadius = '';
-				}, 4000);
-			}
-		}
-	}
-	
-	function showCopyFeedback() {
-		const feedback = document.getElementById('copyFeedback');
-		if (feedback) {
-			feedback.style.display = 'inline';
-			setTimeout(() => {
-				feedback.style.display = 'none';
-			}, 2000);
-		}
-	}
+	// Copy email function
+function copyEmailToClipboard() {
+  const email = 'harley@atlasdivisions.com';
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(email).then(() => {
+      const feedback = document.getElementById('copyFeedback');
+      if (feedback) {
+        feedback.style.display = 'inline';
+        setTimeout(() => {
+          feedback.style.display = 'none';
+        }, 2000);
+      }
+    }).catch((err) => {
+      console.error('Clipboard API failed:', err);
+      fallbackCopyEmail(email);
+    });
+  } else {
+    fallbackCopyEmail(email);
+  }
+}
+
+function fallbackCopyEmail(email: string) {
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = email;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+
+    const feedback = document.getElementById('copyFeedback');
+    if (feedback) {
+      feedback.style.display = 'inline';
+      setTimeout(() => {
+        feedback.style.display = 'none';
+      }, 2000);
+    }
+  } catch (err) {
+    console.error('Fallback copy failed:', err);
+    alert('Copy to clipboard failed. Please copy manually.');
+  }
+}
 
 	// Set up event listeners when DOM is loaded
 	document.addEventListener('DOMContentLoaded', () => {

@@ -3,297 +3,311 @@ import Globe from './Globe.astro';
 ---
 
 <header class="hero">
-	<div class="container">
-		<div class="hero-content">
-			<div class="globe-section">
-				<Globe />
-			</div>
-			<div class="content-section">
-				<div class="logo-section">
-					<h1 class="logo">Atlas Divisions</h1>
-					<p class="tagline">Solutions That Outlast the Storm</p>
-				</div>
-				<div class="identity-statement">
-					<p>
-						<strong>Atlas Divisions</strong> isn't just another repair or consulting business. It's an adaptive response system designed for real-world chaos. Led by Captain Harley Miller, we integrate transparent AI tools, hands-on expertise, and future-focused strategies—because your crisis deserves more than just a temporary fix.
-					</p>
-				</div>
-				<div class="cta-section">
-					<p class="cta-text">Facing something urgent or complex? Let's talk—clearly, honestly, effectively.</p>
-					<div class="cta-buttons">
-						<a href="mailto:harley@atlasdivisions.com?subject=Atlas%20Divisions%20Inquiry" class="cta-button primary">Email Harley Directly</a>
-						<a href="/#contact" class="cta-button secondary">Fill Out a Quick Form</a>
-					</div>
-					<div class="email-fallback">
-						<button class="copy-email-btn" id="copyEmailHeader">
-							📋 Copy: harley@atlasdivisions.com
-						</button>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+  <div class="container">
+    <div class="hero-content">
+      <div class="globe-section">
+        <Globe />
+      </div>
+      <div class="content-section">
+        <div class="logo-section">
+          <h1 class="logo">Atlas Divisions</h1>
+          <p class="tagline">Solutions That Outlast the Storm</p>
+        </div>
+        <div class="identity-statement">
+          <p>
+            <strong>Atlas Divisions</strong> isn't just another repair or consulting business. It's an adaptive response system designed for real-world chaos. Led by Captain Harley Miller, we integrate transparent AI tools, hands-on expertise, and future-focused strategies—because your crisis deserves more than just a temporary fix.
+          </p>
+        </div>
+        <div class="cta-section">
+          <p class="cta-text">Facing something urgent or complex? Let's talk—clearly, honestly, effectively.</p>
+          <div class="cta-buttons">
+            <a href="mailto:harley@atlasdivisions.com?subject=Atlas%20Divisions%20Inquiry" class="cta-button primary">Email Harley Directly</a>
+            <a href="/#contact" class="cta-button secondary">Fill Out a Quick Form</a>
+          </div>
+          <div class="email-fallback">
+            <button class="copy-email-btn" id="copyEmailHeader">
+              📋 Copy: harley@atlasdivisions.com
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </header>
 
 <script>
-	// Copy email function for header - modern approach
-	async function copyEmailFromHeader() {
-		const email = 'harley@atlasdivisions.com';
-		const btn = document.getElementById('copyEmailHeader') as HTMLButtonElement;
-		
-		try {
-			// Use modern clipboard API
-			await navigator.clipboard.writeText(email);
-			
-			if (btn) {
-				const originalText = btn.textContent;
-				btn.textContent = '✓ Copied!';
-				btn.style.color = 'var(--color-accent-teal)';
-				setTimeout(() => {
-					btn.textContent = originalText;
-					btn.style.color = '';
-				}, 2000);
-			}
-		} catch (err) {
-			// Graceful fallback: show email in button text
-			if (btn) {
-				const originalText = btn.textContent;
-				btn.textContent = `Copy: ${email}`;
-				btn.style.color = 'var(--color-accent-gold)';
-				btn.style.fontSize = '0.8rem';
-				setTimeout(() => {
-					btn.textContent = originalText;
-					btn.style.color = '';
-					btn.style.fontSize = '';
-				}, 4000);
-			}
-		}
-	}
+// Copy email function for header
+function copyEmailFromHeader() {
+  const email = 'harley@atlasdivisions.com';
+  const btn = document.getElementById('copyEmailHeader') as HTMLButtonElement | null;
+  function showCopied(btn: HTMLButtonElement | null) {
+    if (btn) {
+      const originalText = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      btn.style.color = 'var(--color-accent-teal)';
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.color = '';
+      }, 2000);
+    }
+  }
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(email).then(() => {
+      showCopied(btn);
+    }).catch((err) => {
+      console.error('Clipboard API failed:', err);
+      fallbackCopyEmailHeader(email, btn);
+    });
+  } else {
+    fallbackCopyEmailHeader(email, btn);
+  }
+}
 
-	// Set up event listener when DOM is loaded
-	document.addEventListener('DOMContentLoaded', () => {
-		const copyHeaderBtn = document.getElementById('copyEmailHeader');
-		if (copyHeaderBtn) {
-			copyHeaderBtn.addEventListener('click', copyEmailFromHeader);
-		}
-	});
+function fallbackCopyEmailHeader(email: string, btn: HTMLButtonElement | null) {
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = email;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    if (btn) {
+      const originalText = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      btn.style.color = 'var(--color-accent-teal)';
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.style.color = '';
+      }, 2000);
+    }
+  } catch (err) {
+    console.error('Fallback copy failed:', err);
+    alert('Copy to clipboard failed. Please copy manually.');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const copyHeaderBtn = document.getElementById('copyEmailHeader') as HTMLButtonElement | null;
+  if (copyHeaderBtn) {
+    copyHeaderBtn.addEventListener('click', copyEmailFromHeader);
+  }
+});
 </script>
 
 <style>
-	.hero {
-		min-height: calc(100vh - 70px);
-		display: flex;
-		align-items: center;
-		background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-bg-secondary) 100%);
-		position: relative;
-		overflow: hidden;
-	}
+.hero {
+  min-height: calc(100vh - 70px);
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-bg-secondary) 100%);
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 70% 80%, rgba(0, 128, 128, 0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
 
-	.hero::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: radial-gradient(circle at 30% 20%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
-					radial-gradient(circle at 70% 80%, rgba(0, 128, 128, 0.08) 0%, transparent 50%);
-		pointer-events: none;
-	}
+.hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  animation: fadeInUp 1s ease-out;
+}
 
-	.hero-content {
-		position: relative;
-		z-index: 1;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 4rem;
-		max-width: 1200px;
-		margin: 0 auto;
-		animation: fadeInUp 1s ease-out;
-	}
+.globe-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-	.globe-section {
-		flex: 1;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-	}
+.content-section {
+  flex: 1;
+  text-align: left;
+}
 
-	.content-section {
-		flex: 1;
-		text-align: left;
-	}
+.logo-section {
+  margin-bottom: 3rem;
+}
 
-	.logo-section {
-		margin-bottom: 3rem;
-	}
+.logo {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  color: var(--color-text);
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
 
-	.logo {
-		font-size: clamp(2.5rem, 5vw, 4rem);
-		font-weight: 800;
-		color: var(--color-text);
-		margin-bottom: 1rem;
-		letter-spacing: -0.02em;
-	}
+.tagline {
+  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+  color: var(--color-accent-gold);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
 
-	.tagline {
-		font-size: clamp(1.2rem, 2.5vw, 1.5rem);
-		color: var(--color-accent-gold);
-		font-weight: 500;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-	}
+.identity-statement {
+  background: rgba(26, 26, 26, 0.8);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  padding: 2.5rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
 
-	.identity-statement {
-		background: rgba(26, 26, 26, 0.8);
-		border: 1px solid rgba(212, 175, 55, 0.3);
-		border-radius: 12px;
-		padding: 2.5rem;
-		backdrop-filter: blur(10px);
-		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-	}
+.identity-statement p {
+  font-size: clamp(1.1rem, 2vw, 1.3rem);
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  font-weight: 400;
+}
 
-	.identity-statement p {
-		font-size: clamp(1.1rem, 2vw, 1.3rem);
-		color: var(--color-text-secondary);
-		line-height: 1.7;
-		font-weight: 400;
-	}
+.cta-section {
+  margin-top: 2rem;
+  text-align: center;
+}
 
-	.cta-section {
-		margin-top: 2rem;
-		text-align: center;
-	}
+.cta-text {
+  font-size: clamp(1.1rem, 2vw, 1.2rem);
+  color: var(--color-text);
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
 
-	.cta-text {
-		font-size: clamp(1.1rem, 2vw, 1.2rem);
-		color: var(--color-text);
-		margin-bottom: 1.5rem;
-		font-weight: 500;
-	}
+.cta-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
 
-	.cta-buttons {
-		display: flex;
-		gap: 1rem;
-		justify-content: center;
-		flex-wrap: wrap;
-	}
+.cta-button {
+  display: inline-block;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
 
-	.cta-button {
-		display: inline-block;
-		padding: 0.8rem 1.5rem;
-		border-radius: 8px;
-		text-decoration: none;
-		font-weight: 600;
-		font-size: 1rem;
-		transition: all 0.3s ease;
-		border: 2px solid transparent;
-	}
+.cta-button.primary {
+  background: var(--color-accent-gold);
+  color: var(--color-bg);
+}
 
-	.cta-button.primary {
-		background: var(--color-accent-gold);
-		color: var(--color-bg);
-	}
+.cta-button.primary:hover {
+  background: transparent;
+  color: var(--color-accent-gold);
+  border-color: var(--color-accent-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
+}
 
-	.cta-button.primary:hover {
-		background: transparent;
-		color: var(--color-accent-gold);
-		border-color: var(--color-accent-gold);
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
-	}
+.cta-button.secondary {
+  background: transparent;
+  color: var(--color-accent-teal);
+  border-color: var(--color-accent-teal);
+}
 
-	.cta-button.secondary {
-		background: transparent;
-		color: var(--color-accent-teal);
-		border-color: var(--color-accent-teal);
-	}
+.cta-button.secondary:hover {
+  background: var(--color-accent-teal);
+  color: var(--color-bg);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 128, 128, 0.2);
+}
 
-	.cta-button.secondary:hover {
-		background: var(--color-accent-teal);
-		color: var(--color-bg);
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(0, 128, 128, 0.2);
-	}
+.email-fallback {
+  margin-top: 1rem;
+}
 
-	.email-fallback {
-		margin-top: 1rem;
-	}
+.copy-email-btn {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
 
-	.copy-email-btn {
-		background: transparent;
-		color: var(--color-text-secondary);
-		border: 1px solid rgba(255, 255, 255, 0.2);
-		padding: 0.5rem 1rem;
-		border-radius: 8px;
-		font-size: 0.9rem;
-		cursor: pointer;
-		transition: all 0.3s ease;
-	}
+.copy-email-btn:hover {
+  color: var(--color-accent-gold);
+  border-color: var(--color-accent-gold);
+}
 
-	.copy-email-btn:hover {
-		color: var(--color-accent-gold);
-		border-color: var(--color-accent-gold);
-	}
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-	@keyframes fadeInUp {
-		from {
-			opacity: 0;
-			transform: translateY(30px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
+@media (max-width: 768px) {
+  .hero {
+    min-height: 90vh;
+    padding: 2rem 0;
+  }
 
-	@media (max-width: 768px) {
-		.hero {
-			min-height: 90vh;
-			padding: 2rem 0;
-		}
+  .hero-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 2rem;
+  }
 
-		.hero-content {
-			flex-direction: column;
-			text-align: center;
-			gap: 2rem;
-		}
+  .content-section {
+    text-align: center;
+  }
 
-		.content-section {
-			text-align: center;
-		}
+  .identity-statement {
+    padding: 2rem;
+  }
+}
 
-		.identity-statement {
-			padding: 2rem;
-		}
-	}
+@media (max-width: 480px) {
+  .hero {
+    padding: 1rem 0;
+  }
 
-	@media (max-width: 480px) {
-		.hero {
-			padding: 1rem 0;
-		}
+  .hero-content {
+    gap: 1.5rem;
+  }
 
-		.hero-content {
-			gap: 1.5rem;
-		}
+  .identity-statement {
+    padding: 1.5rem;
+  }
 
-		.identity-statement {
-			padding: 1.5rem;
-		}
+  .cta-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
 
-		.cta-buttons {
-			flex-direction: column;
-			align-items: center;
-		}
+  .cta-button {
+    width: 100%;
+    max-width: 280px;
+  }
 
-		.cta-button {
-			width: 100%;
-			max-width: 280px;
-		}
-
-		.logo-section {
-			margin-bottom: 2rem;
-		}
-	}
+  .logo-section {
+    margin-bottom: 2rem;
+  }
+}
 </style>
