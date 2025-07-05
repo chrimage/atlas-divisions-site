@@ -83,34 +83,47 @@
 
 <script>
 	// Copy email function
-	function copyEmailToClipboard() {
-		const email = 'harley@atlasdivisions.com';
-		navigator.clipboard.writeText(email).then(() => {
-			const feedback = document.getElementById('copyFeedback');
-			if (feedback) {
-				feedback.style.display = 'inline';
-				setTimeout(() => {
-					feedback.style.display = 'none';
-				}, 2000);
-			}
-		}).catch(() => {
-			// Fallback for older browsers
-			const textArea = document.createElement('textarea');
-			textArea.value = email;
-			document.body.appendChild(textArea);
-			textArea.select();
-			document.execCommand('copy');
-			document.body.removeChild(textArea);
-			
-			const feedback = document.getElementById('copyFeedback');
-			if (feedback) {
-				feedback.style.display = 'inline';
-				setTimeout(() => {
-					feedback.style.display = 'none';
-				}, 2000);
-			}
-		});
-	}
+function copyEmailToClipboard() {
+  const email = 'harley@atlasdivisions.com';
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(email).then(() => {
+      const feedback = document.getElementById('copyFeedback');
+      if (feedback) {
+        feedback.style.display = 'inline';
+        setTimeout(() => {
+          feedback.style.display = 'none';
+        }, 2000);
+      }
+    }).catch((err) => {
+      console.error('Clipboard API failed:', err);
+      fallbackCopyEmail(email);
+    });
+  } else {
+    fallbackCopyEmail(email);
+  }
+}
+
+function fallbackCopyEmail(email: string) {
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = email;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+
+    const feedback = document.getElementById('copyFeedback');
+    if (feedback) {
+      feedback.style.display = 'inline';
+      setTimeout(() => {
+        feedback.style.display = 'none';
+      }, 2000);
+    }
+  } catch (err) {
+    console.error('Fallback copy failed:', err);
+    alert('Copy to clipboard failed. Please copy manually.');
+  }
+}
 
 	// Set up event listeners when DOM is loaded
 	document.addEventListener('DOMContentLoaded', () => {

@@ -39,8 +39,8 @@ import Globe from './Globe.astro';
 // Copy email function for header
 function copyEmailFromHeader() {
   const email = 'harley@atlasdivisions.com';
-  navigator.clipboard.writeText(email).then(() => {
-    const btn = document.getElementById('copyEmailHeader');
+  const btn = document.getElementById('copyEmailHeader') as HTMLButtonElement | null;
+  function showCopied(btn: HTMLButtonElement | null) {
     if (btn) {
       const originalText = btn.textContent;
       btn.textContent = '✓ Copied!';
@@ -50,14 +50,27 @@ function copyEmailFromHeader() {
         btn.style.color = '';
       }, 2000);
     }
-  }).catch(() => {
+  }
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(email).then(() => {
+      showCopied(btn);
+    }).catch((err) => {
+      console.error('Clipboard API failed:', err);
+      fallbackCopyEmailHeader(email, btn);
+    });
+  } else {
+    fallbackCopyEmailHeader(email, btn);
+  }
+}
+
+function fallbackCopyEmailHeader(email: string, btn: HTMLButtonElement | null) {
+  try {
     const textArea = document.createElement('textarea');
     textArea.value = email;
     document.body.appendChild(textArea);
     textArea.select();
     document.execCommand('copy');
     document.body.removeChild(textArea);
-    const btn = document.getElementById('copyHeaderBtn');
     if (btn) {
       const originalText = btn.textContent;
       btn.textContent = '✓ Copied!';
@@ -67,11 +80,14 @@ function copyEmailFromHeader() {
         btn.style.color = '';
       }, 2000);
     }
-  });
+  } catch (err) {
+    console.error('Fallback copy failed:', err);
+    alert('Copy to clipboard failed. Please copy manually.');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const copyHeaderBtn = document.getElementById('copyEmailHeader');
+  const copyHeaderBtn = document.getElementById('copyEmailHeader') as HTMLButtonElement | null;
   if (copyHeaderBtn) {
     copyHeaderBtn.addEventListener('click', copyEmailFromHeader);
   }
