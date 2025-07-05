@@ -82,35 +82,44 @@
 </section>
 
 <script>
-	// Copy email function
-	function copyEmailToClipboard() {
+	// Copy email function - modern approach
+	async function copyEmailToClipboard() {
 		const email = 'harley@atlasdivisions.com';
-		navigator.clipboard.writeText(email).then(() => {
+		
+		try {
+			// Use modern clipboard API
+			await navigator.clipboard.writeText(email);
+			showCopyFeedback();
+		} catch (err) {
+			// Graceful fallback: show the email and instruction
 			const feedback = document.getElementById('copyFeedback');
 			if (feedback) {
+				feedback.textContent = `Copy: ${email}`;
 				feedback.style.display = 'inline';
+				feedback.style.background = '#d4af37';
+				feedback.style.color = '#000';
+				feedback.style.padding = '0.5rem';
+				feedback.style.borderRadius = '4px';
 				setTimeout(() => {
 					feedback.style.display = 'none';
-				}, 2000);
+					feedback.textContent = 'Copied!';
+					feedback.style.background = '';
+					feedback.style.color = '';
+					feedback.style.padding = '';
+					feedback.style.borderRadius = '';
+				}, 4000);
 			}
-		}).catch(() => {
-			// Fallback for older browsers
-			const textArea = document.createElement('textarea');
-			textArea.value = email;
-			document.body.appendChild(textArea);
-			textArea.select();
-			// @ts-ignore
-			document.execCommand('copy');
-			document.body.removeChild(textArea);
-			
-			const feedback = document.getElementById('copyFeedback');
-			if (feedback) {
-				feedback.style.display = 'inline';
-				setTimeout(() => {
-					feedback.style.display = 'none';
-				}, 2000);
-			}
-		});
+		}
+	}
+	
+	function showCopyFeedback() {
+		const feedback = document.getElementById('copyFeedback');
+		if (feedback) {
+			feedback.style.display = 'inline';
+			setTimeout(() => {
+				feedback.style.display = 'none';
+			}, 2000);
+		}
 	}
 
 	// Set up event listeners when DOM is loaded

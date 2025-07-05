@@ -36,31 +36,15 @@ import Globe from './Globe.astro';
 </header>
 
 <script>
-	// Copy email function for header
-	function copyEmailFromHeader() {
+	// Copy email function for header - modern approach
+	async function copyEmailFromHeader() {
 		const email = 'harley@atlasdivisions.com';
-		navigator.clipboard.writeText(email).then(() => {
-			const btn = document.getElementById('copyEmailHeader') as HTMLButtonElement;
-			if (btn) {
-				const originalText = btn.textContent;
-				btn.textContent = '✓ Copied!';
-				btn.style.color = 'var(--color-accent-teal)';
-				setTimeout(() => {
-					btn.textContent = originalText;
-					btn.style.color = '';
-				}, 2000);
-			}
-		}).catch(() => {
-			// Fallback for older browsers
-			const textArea = document.createElement('textarea');
-			textArea.value = email;
-			document.body.appendChild(textArea);
-			textArea.select();
-			// @ts-ignore
-			document.execCommand('copy');
-			document.body.removeChild(textArea);
+		const btn = document.getElementById('copyEmailHeader') as HTMLButtonElement;
+		
+		try {
+			// Use modern clipboard API
+			await navigator.clipboard.writeText(email);
 			
-			const btn = document.getElementById('copyEmailHeader') as HTMLButtonElement;
 			if (btn) {
 				const originalText = btn.textContent;
 				btn.textContent = '✓ Copied!';
@@ -70,7 +54,20 @@ import Globe from './Globe.astro';
 					btn.style.color = '';
 				}, 2000);
 			}
-		});
+		} catch (err) {
+			// Graceful fallback: show email in button text
+			if (btn) {
+				const originalText = btn.textContent;
+				btn.textContent = `Copy: ${email}`;
+				btn.style.color = 'var(--color-accent-gold)';
+				btn.style.fontSize = '0.8rem';
+				setTimeout(() => {
+					btn.textContent = originalText;
+					btn.style.color = '';
+					btn.style.fontSize = '';
+				}, 4000);
+			}
+		}
 	}
 
 	// Set up event listener when DOM is loaded
