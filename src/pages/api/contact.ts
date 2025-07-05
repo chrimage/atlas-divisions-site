@@ -1,3 +1,5 @@
+// Define APIRoute locally to avoid import issues while maintaining proper typing
+type APIRoute = (context: { request: Request; locals: any; clientAddress: string }) => Response | Promise<Response>;
 import escapeHtml from 'escape-html';
 
 // Simple in-memory rate limiter (for production, use Redis or similar)
@@ -34,7 +36,7 @@ function isRateLimited(ip: string, maxRequests: number = 5, windowMs: number = 6
 }
 
 // CORS preflight handler
-export const OPTIONS = async () => {
+export const OPTIONS: APIRoute = async () => {
   return new Response(null, {
     status: 200,
     headers: {
@@ -47,7 +49,7 @@ export const OPTIONS = async () => {
 };
 
 // Only allow POST requests - other methods will automatically get 405 Method Not Allowed
-export const POST = async ({ request, locals, clientAddress }: any) => {
+export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
   const startTime = Date.now();
   const requestId = crypto.randomUUID().substring(0, 8);
   const clientIP = clientAddress || request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown';
