@@ -26,8 +26,10 @@ import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.177.0/
 
     let isDragging = false;
     let prev = { x: 0, y: 0 };
-    let vel = 0.005;
+    let vel = 0;
+    const baseVel = 0.005;
     const friction = 0.95;
+    const minVel = 0.0008;
 
     const makeTexture = async () => {
       const canvas = document.createElement('canvas');
@@ -88,16 +90,21 @@ import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.177.0/
     window.addEventListener('resize', onResize);
 
     let frame;
-    function animate() {
+    let lastTime = performance.now();
+    function animate(now) {
       frame = requestAnimationFrame(animate);
+      const delta = (now - lastTime) / 1000; // seconds
+      lastTime = now;
+
       if (!isDragging) {
         vel *= friction;
-        if (Math.abs(vel) < 0.001) vel = 0.005;
+        if (Math.abs(vel) < minVel) vel = 0;
       }
-      mesh.rotation.y += vel;
+      mesh.rotation.y += (baseVel + vel) * (delta * 60); // base spin + user velocity
+
       renderer.render(scene, camera);
     }
-    animate();
+    animate(lastTime);
 
     return () => {
       cancelAnimationFrame(frame);
