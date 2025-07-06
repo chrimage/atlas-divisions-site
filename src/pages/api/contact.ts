@@ -1,5 +1,4 @@
-// Define APIRoute locally to avoid import issues while maintaining proper typing
-type APIRoute = (context: { request: Request; locals: any; clientAddress: string }) => Response | Promise<Response>;
+import type { APIRoute } from 'astro';
 import escapeHtml from 'escape-html';
 
 // Simple in-memory rate limiter (for production, use Redis or similar)
