@@ -229,9 +229,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
       try {
         const subject = `Atlas Divisions Contact: ${service_type} - ${name}`;
         const text = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🌍 New Atlas Divisions Contact Form Submission
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌍 ATLAS DIVISIONS CONTACT FORM
+================================
 
 👤 Customer: ${name}
 📧 Email: ${email}
@@ -242,11 +241,11 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
 ${message}
 
 🕒 Submitted: ${new Date(submission.timestamp).toLocaleString()}
-🌐 Environment: ${env?.ENVIRONMENT || 'production'}
-📝 Submission ID: ${submission.id}
+📝 ID: ${submission.id}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Solutions That Outlast the Storm - Reply directly to contact the customer.
+================================
+Solutions That Outlast the Storm
+Reply directly to contact customer.
         `.trim();
         
         // Construct from email using FROM_EMAIL_NAME + MG_DOMAIN
