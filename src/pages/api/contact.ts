@@ -247,7 +247,7 @@ ${message}
 
 ================================
 Solutions That Outlast the Storm
-Reply directly to contact customer.
+Click Reply to respond to ${name}.
         `.trim();
 
         // HTML version with clickable links
@@ -313,7 +313,7 @@ Reply directly to contact customer.
   
   <div class="footer">
     <strong>Solutions That Outlast the Storm</strong><br>
-    Reply directly to this email to contact the customer.
+    Click Reply to respond directly to ${name}.
   </div>
 </body>
 </html>
@@ -325,6 +325,7 @@ Reply directly to contact customer.
         const params = new URLSearchParams({
           from: `Atlas Divisions Contact System <${fromEmail}>`,
           to: adminEmail,
+          'h:Reply-To': `${name} <${email}>`,
           subject: subject,
           text: text,
           html: html
