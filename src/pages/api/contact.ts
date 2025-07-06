@@ -228,6 +228,8 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     if (mgApiKey && mgDomain && adminEmail) {
       try {
         const subject = `Atlas Divisions Contact: ${service_type} - ${name}`;
+        
+        // Plain text version (fallback)
         const text = `
 🌍 ATLAS DIVISIONS CONTACT FORM
 ================================
@@ -247,6 +249,75 @@ ${message}
 Solutions That Outlast the Storm
 Reply directly to contact customer.
         `.trim();
+
+        // HTML version with clickable links
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas Divisions Contact Form</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: #d4af37; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
+    .header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    .content { background: #f8f9fa; padding: 25px; border-radius: 0 0 8px 8px; border: 1px solid #e9ecef; }
+    .field { margin-bottom: 15px; }
+    .label { font-weight: 600; color: #495057; display: inline-block; min-width: 80px; }
+    .value { color: #212529; }
+    .message-box { background: white; padding: 15px; border-radius: 6px; border-left: 4px solid #d4af37; margin: 15px 0; }
+    .footer { text-align: center; margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 6px; font-size: 14px; color: #6c757d; }
+    .link { color: #0066cc; text-decoration: none; }
+    .link:hover { text-decoration: underline; }
+    .phone-link { color: #0066cc; text-decoration: none; }
+    .timestamp { font-size: 12px; color: #6c757d; margin-top: 15px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🌍 Atlas Divisions Contact Form Submission</h1>
+  </div>
+  
+  <div class="content">
+    <div class="field">
+      <span class="label">👤 Customer:</span>
+      <span class="value">${name}</span>
+    </div>
+    
+    <div class="field">
+      <span class="label">📧 Email:</span>
+      <span class="value"><a href="mailto:${email}" class="link">${email}</a></span>
+    </div>
+    
+    <div class="field">
+      <span class="label">📱 Phone:</span>
+      <span class="value">${phone ? `<a href="tel:${phone}" class="phone-link">${phone}</a>` : 'Not provided'}</span>
+    </div>
+    
+    <div class="field">
+      <span class="label">🔧 Service:</span>
+      <span class="value">${service_type}</span>
+    </div>
+    
+    <div class="message-box">
+      <strong>💬 Message:</strong><br>
+      ${message.replace(/\n/g, '<br>')}
+    </div>
+    
+    <div class="timestamp">
+      🕒 Submitted: ${new Date(submission.timestamp).toLocaleString()}<br>
+      📝 Submission ID: ${submission.id}
+    </div>
+  </div>
+  
+  <div class="footer">
+    <strong>Solutions That Outlast the Storm</strong><br>
+    Reply directly to this email to contact the customer.
+  </div>
+</body>
+</html>
+        `.trim();
         
         // Construct from email using FROM_EMAIL_NAME + MG_DOMAIN
         const fromEmail = `${fromEmailName}@${mgDomain}`;
@@ -255,7 +326,8 @@ Reply directly to contact customer.
           from: `Atlas Divisions Contact System <${fromEmail}>`,
           to: adminEmail,
           subject: subject,
-          text: text
+          text: text,
+          html: html
         });
         
         const response = await fetch(`https://api.mailgun.net/v3/${mgDomain}/messages`, {
