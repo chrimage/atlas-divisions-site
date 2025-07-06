@@ -165,7 +165,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     
     // Return validation errors
     if (errors.length > 0) {
-      console.warn(`[${requestId}] Validation errors:`, errors);
+      console.warn(`[${requestId}] Validation failed`);
       return new Response(
         JSON.stringify({ 
           error: 'Validation failed',
@@ -217,16 +217,14 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
           submission.id, submission.name, submission.email, submission.phone,
           submission.service_type, submission.message, submission.status, submission.timestamp
         ).run();
-        console.log(`[${requestId}] Submission saved to database: ${submission.id}`);
+        console.log(`[${requestId}] Submission saved to database`);
       } catch (dbError) {
-        console.error(`[${requestId}] Database save error:`, dbError);
+        console.error(`[${requestId}] Database save error`);
         // Don't fail the request if database save fails
       }
     }
 
     // Send email notification if Mailgun is configured
-    console.log(`[${requestId}] Email config check - Domain: ${mgDomain}, Admin: ${adminEmail}, API Key: ${mgApiKey ? 'SET' : 'NOT_SET'}`);
-    
     if (mgApiKey && mgDomain && adminEmail) {
       try {
         const subject = `Atlas Divisions Contact: ${service_type} - ${name}`;
@@ -271,20 +269,14 @@ Solutions That Outlast the Storm - Reply directly to contact the customer.
         });
         
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`[${requestId}] Email failed: ${response.status} ${response.statusText}`);
-          console.error(`[${requestId}] Mailgun domain: ${mgDomain}`);
-          console.error(`[${requestId}] From email: ${fromEmail}`);
-          console.error(`[${requestId}] Error details: ${errorText}`);
+          console.error(`[${requestId}] Email notification failed: ${response.status} ${response.statusText}`);
         } else {
-          console.log(`[${requestId}] Email notification sent successfully for submission ${submission.id}`);
+          console.log(`[${requestId}] Email notification sent successfully`);
         }
       } catch (emailError) {
-        console.error(`[${requestId}] Mailgun email error:`, emailError);
+        console.error(`[${requestId}] Email service error`);
         // Don't fail the request if email fails
       }
-    } else {
-      console.log(`[${requestId}] MG_API_KEY, MG_DOMAIN, or ADMIN_EMAIL not configured, skipping notification`);
     }
 
     const duration = Date.now() - startTime;
