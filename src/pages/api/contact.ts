@@ -1,4 +1,5 @@
-import type { APIRoute } from 'astro';
+// Define APIRoute locally to avoid import issues while maintaining proper typing
+type APIRoute = (context: { request: Request; locals: any; clientAddress: string }) => Response | Promise<Response>;
 import escapeHtml from 'escape-html';
 
 // Simple in-memory rate limiter (for production, use Redis or similar)
@@ -325,7 +326,7 @@ Click Reply to respond to ${name}.
         const params = new URLSearchParams({
           from: `Atlas Divisions Contact System <${fromEmail}>`,
           to: adminEmail,
-          'h:Reply-To': `${name} <${email}>`,
+          'h:reply-to': `${name} <${email}>`,
           subject: subject,
           text: text,
           html: html
