@@ -19,6 +19,7 @@ let THREE = null;
  * Configuration object for AtlasGlobe
  * @typedef {Object} AtlasGlobeConfig
  * @property {string|HTMLElement} container - Container element selector or HTMLElement
+ * @property {string} mode - Display mode ('standard' or 'fullscreen')
  * @property {Object} colors - Color configuration
  * @property {string} colors.ocean - Ocean color (hex)
  * @property {string} colors.land - Land color (hex)
@@ -63,6 +64,9 @@ export class AtlasGlobe {
     // Container element
     this.container = this.resolveContainer(this.config.container);
     
+    // Mode configuration
+    this.mode = this.config.mode || 'standard';
+    
     // Animation properties
     this.autoRotationSpeed = this.config.animation.autoRotationSpeed;
     this.friction = this.config.animation.friction;
@@ -74,10 +78,11 @@ export class AtlasGlobe {
     // Feature flags
     this.features = this.config.features;
     
-    // Initialize if Three.js is available
-    if (THREE) {
-      this.init();
-    }
+    // Size configuration based on mode
+    this.sizeConfig = this.getSizeConfig();
+    
+    // Don't auto-initialize - wait for explicit init() call
+    // This ensures THREE is properly loaded first
   }
   
   /**
@@ -88,6 +93,7 @@ export class AtlasGlobe {
   mergeConfig(userConfig) {
     const defaults = {
       container: '#globe-canvas',
+      mode: 'standard',
       colors: {
         ocean: '#001122',
         land: '#d4af37',
@@ -109,6 +115,7 @@ export class AtlasGlobe {
     
     return {
       container: userConfig.container || defaults.container,
+      mode: userConfig.mode || defaults.mode,
       colors: { ...defaults.colors, ...userConfig.colors },
       animation: { ...defaults.animation, ...userConfig.animation },
       features: { ...defaults.features, ...userConfig.features }
@@ -128,9 +135,58 @@ export class AtlasGlobe {
   }
   
   /**
+   * Get size configuration based on mode
+   * @returns {Object} Size configuration object
+   */
+  getSizeConfig() {
+    if (this.mode === 'fullscreen') {
+      return {
+        sphereRadius: 2.5,
+        atmosphereRadius: 2.65,
+        cameraDistance: 6,
+        cityLightSize: {
+          base: 0.006,
+          multiplier: 0.020
+        },
+        textureSize: {
+          width: 4096,
+          height: 2048
+        }
+      };
+    } else {
+      return {
+        sphereRadius: 2.2,
+        atmosphereRadius: 2.35,
+        cameraDistance: 5.5,
+        cityLightSize: {
+          base: 0.006,
+          multiplier: 0.018
+        },
+        textureSize: {
+          width: 3072,
+          height: 1536
+        }
+      };
+    }
+  }
+  
+  /**
+   * Set the THREE.js library reference
+   * @param {Object} threeLibrary - The THREE.js library object
+   */
+  setThreeJS(threeLibrary) {
+    THREE = threeLibrary;
+  }
+  
+  /**
    * Initialize the globe
    */
   async init() {
+    // Use global THREE if available, otherwise use module-level THREE
+    if (!THREE && typeof window !== 'undefined' && window.THREE) {
+      THREE = window.THREE;
+    }
+    
     if (!THREE) {
       console.error('Three.js not loaded. Use loadThreeJS() first.');
       return;
@@ -185,7 +241,8 @@ export class AtlasGlobe {
       this.renderer.setClearColor(0x000000, 0);
       this.container.appendChild(this.renderer.domElement);
       
-      this.camera.position.z = 4;
+      // Use dynamic camera distance based on mode
+      this.camera.position.z = this.sizeConfig.cameraDistance;
       
       this.createGlobe();
       this.setupLighting();
@@ -197,7 +254,7 @@ export class AtlasGlobe {
    * Create the globe mesh with texture
    */
   async createGlobe() {
-    const geometry = new THREE.SphereGeometry(1.5, 64, 64);
+    const geometry = new THREE.SphereGeometry(this.sizeConfig.sphereRadius, 64, 64);
     const texture = await this.createAtlasTexture();
     
     const material = new THREE.MeshPhongMaterial({
@@ -227,7 +284,7 @@ export class AtlasGlobe {
    * Create atmospheric layer
    */
   createAtmosphere() {
-    const atmosphereGeometry = new THREE.SphereGeometry(1.6, 64, 64);
+    const atmosphereGeometry = new THREE.SphereGeometry(this.sizeConfig.atmosphereRadius, 64, 64);
     const atmosphereMaterial = new THREE.MeshBasicMaterial({
       color: this.atlasColors.atmosphere,
       transparent: true,
@@ -266,8 +323,8 @@ export class AtlasGlobe {
    */
   async createAtlasTexture() {
     const canvas = document.createElement('canvas');
-    canvas.width = 2048;
-    canvas.height = 1024;
+    canvas.width = this.sizeConfig.textureSize.width;
+    canvas.height = this.sizeConfig.textureSize.height;
     const ctx = canvas.getContext('2d');
     if (!ctx) return new THREE.CanvasTexture(canvas);
     
@@ -391,7 +448,7 @@ export class AtlasGlobe {
         // Convert coordinates to 3D position
         const phi = (90 - lat) * (Math.PI / 180);
         const theta = (-lon) * (Math.PI / 180);
-        const radius = 1.51;
+        const radius = this.sizeConfig.sphereRadius + 0.01;
         
         const x = radius * Math.sin(phi) * Math.cos(theta);
         const y = radius * Math.cos(phi);
@@ -402,7 +459,7 @@ export class AtlasGlobe {
         const maxPop = 38000000;
         const popNormalized = Math.min(1, Math.max(0, (Math.log10(population) - Math.log10(minPop)) / (Math.log10(maxPop) - Math.log10(minPop))));
         
-        const size = 0.004 + popNormalized * 0.014;
+        const size = this.sizeConfig.cityLightSize.base + popNormalized * this.sizeConfig.cityLightSize.multiplier;
         const intensity = 0.25 + popNormalized * 0.45;
         
         // Determine light color based on region

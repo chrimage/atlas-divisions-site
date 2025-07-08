@@ -113,14 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 4rem;
-  max-width: 1200px;
+  gap: 2rem;
+  max-width: 1500px;
   margin: 0 auto;
   animation: fadeInUp 1s ease-out;
 }
 
 .globe-section {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
 .content-section {
   flex: 1;
   text-align: left;
+  min-width: 0; /* Allows flex item to shrink properly */
 }
 
 .logo-section {
@@ -136,19 +137,21 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 
 .logo {
-  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
   font-weight: 800;
   color: var(--color-text);
   margin-bottom: 1rem;
   letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .tagline {
-  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+  font-size: clamp(1rem, 2vw, 1.2rem);
   color: var(--color-accent-gold);
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .identity-statement {
@@ -254,6 +257,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 }
 
+@media (max-width: 1024px) {
+  .hero-content {
+    gap: 1.5rem;
+    max-width: 1200px;
+  }
+}
+
 @media (max-width: 768px) {
   .hero {
     min-height: 90vh;
@@ -272,6 +282,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   .identity-statement {
     padding: 2rem;
+  }
+  
+  .logo {
+    white-space: normal; /* Allow wrapping on mobile */
+  }
+  
+  .tagline {
+    white-space: normal; /* Allow wrapping on mobile */
   }
 }
 

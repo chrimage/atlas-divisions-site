@@ -1,8 +1,13 @@
 ---
 // Enhanced Globe component with drag/momentum physics
+export interface Props {
+  mode?: 'standard' | 'fullscreen';
+}
+
+const { mode = 'standard' } = Astro.props;
 ---
 
-<div class="globe-container" role="img" aria-label="Interactive 3D globe showing Atlas Divisions global presence">
+<div class={`globe-container ${mode}`} role="img" aria-label="Interactive 3D globe showing Atlas Divisions global presence">
   <div id="globe-canvas" aria-live="polite" aria-describedby="globe-description">
     <div id="globe-description" class="sr-only">
       An interactive 3D globe that can be rotated by clicking and dragging. The globe shows world continents and represents Atlas Divisions' global reach.
@@ -41,7 +46,7 @@
 
   async function loadGlobeModule() {
     try {
-      const globeModule = await import('/js/globe.js');
+      const globeModule = await import('../globe.js');
       AtlasGlobe = globeModule.AtlasGlobe;
       return true;
     } catch (error) {
@@ -96,9 +101,14 @@
         // Set THREE as global variable for the AtlasGlobe class
         (window as any).THREE = THREE;
         
-        // Initialize AtlasGlobe with the same configuration as before
+        // Get the mode from the container class
+        const container = document.querySelector('.globe-container');
+        const mode = container?.classList.contains('fullscreen') ? 'fullscreen' : 'standard';
+        
+        // Initialize AtlasGlobe with mode-aware configuration
         const globeConfig = {
           container: '#globe-canvas',
+          mode: mode,
           colors: {
             ocean: '#001122',
             land: '#d4af37',
@@ -119,6 +129,7 @@
         };
         
         atlasGlobe = new AtlasGlobe(globeConfig);
+        atlasGlobe.setThreeJS(THREE);
         await atlasGlobe.init();
         
         console.log('Enhanced Atlas Globe initialized successfully');
@@ -158,19 +169,46 @@
     position: relative;
   }
 
-  #globe-canvas {
-    width: min(400px, 90vw);
-    height: min(400px, 90vw);
-    max-width: 400px;
-    max-height: 400px;
+  /* Standard mode styles (default) */
+  .globe-container.standard #globe-canvas {
+    width: min(600px, 90vw);
+    height: min(600px, 90vw);
+    max-width: 600px;
+    max-height: 600px;
     position: relative;
     animation: float 6s ease-in-out infinite;
-    filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.3));
+    filter: drop-shadow(0 0 40px rgba(212, 175, 55, 0.4));
     transition: transform 0.3s ease;
   }
 
-  #globe-canvas:hover {
+  .globe-container.standard #globe-canvas:hover {
     transform: scale(1.05);
+  }
+
+  /* Fullscreen mode styles */
+  .globe-container.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.95);
+  }
+
+  .globe-container.fullscreen #globe-canvas {
+    width: min(85vw, 85vh);
+    height: min(85vw, 85vh);
+    max-width: none;
+    max-height: none;
+    position: relative;
+    animation: float 8s ease-in-out infinite;
+    filter: drop-shadow(0 0 60px rgba(212, 175, 55, 0.6));
+    transition: transform 0.3s ease;
+  }
+
+  .globe-container.fullscreen #globe-canvas:hover {
+    transform: scale(1.02);
   }
 
   #globe-canvas :global(canvas) {
@@ -235,20 +273,30 @@
   }
 
   @media (max-width: 768px) {
-    #globe-canvas {
-      width: min(300px, 80vw);
-      height: min(300px, 80vw);
+    .globe-container.standard #globe-canvas {
+      width: min(450px, 85vw);
+      height: min(450px, 85vw);
     }
     
-    #globe-canvas:hover {
+    .globe-container.standard #globe-canvas:hover {
       transform: scale(1.02); /* Less aggressive scaling on mobile */
+    }
+    
+    .globe-container.fullscreen #globe-canvas {
+      width: min(75vw, 75vh);
+      height: min(75vw, 75vh);
     }
   }
 
   @media (max-width: 480px) {
-    #globe-canvas {
-      width: min(250px, 75vw);
-      height: min(250px, 75vw);
+    .globe-container.standard #globe-canvas {
+      width: min(350px, 80vw);
+      height: min(350px, 80vw);
+    }
+    
+    .globe-container.fullscreen #globe-canvas {
+      width: min(70vw, 70vh);
+      height: min(70vw, 70vh);
     }
   }
 </style>
