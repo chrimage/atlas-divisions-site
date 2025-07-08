@@ -1,11 +1,165 @@
 ---
+// Enhanced Globe component with drag/momentum physics
+export interface Props {
+  mode?: 'standard' | 'fullscreen';
+}
+
+const { mode = 'standard' } = Astro.props;
 ---
 
-<div class="globe-container" role="img" aria-label="Interactive 3D globe showing Atlas Divisions global presence">
-  <div id="globe-canvas" aria-live="polite" aria-describedby="globe-description"></div>
+<div class={`globe-container ${mode}`} role="img" aria-label="Interactive 3D globe showing Atlas Divisions global presence">
+  <div id="globe-canvas" aria-live="polite" aria-describedby="globe-description">
+    <div id="globe-description" class="sr-only">
+      An interactive 3D globe that can be rotated by clicking and dragging. The globe shows world continents and represents Atlas Divisions' global reach.
+    </div>
+  </div>
 </div>
 
-<script type="module" src="/js/globe.js"></script>
+<script>
+  // Dynamic import with loading state and error handling
+  let THREE: any = null;
+  let AtlasGlobe: any = null;
+
+  // Initialize globe when component loads with dynamic import
+  let atlasGlobe: any = null;
+  let isInitializing = false; // Prevent duplicate initialization
+  
+  function cleanupGlobe() {
+    if (atlasGlobe && atlasGlobe.dispose) {
+      // Use the dispose method from the AtlasGlobe class
+      atlasGlobe.dispose();
+      atlasGlobe = null;
+    }
+    isInitializing = false;
+  }
+  
+  async function loadThreeJS() {
+    try {
+      const threeModule = await import('three');
+      THREE = threeModule;
+      return true;
+    } catch (error) {
+      console.error('Failed to load Three.js:', error);
+      return false;
+    }
+  }
+
+  async function loadGlobeModule() {
+    try {
+      const globeModule = await import('../globe.js');
+      AtlasGlobe = globeModule.AtlasGlobe;
+      return true;
+    } catch (error) {
+      console.error('Failed to load Globe module:', error);
+      return false;
+    }
+  }
+  
+  async function initializeGlobe() {
+    // Prevent duplicate initialization
+    if (isInitializing || atlasGlobe) return;
+    
+    // Check if globe container exists (only initialize if on home page)
+    const container = document.getElementById('globe-canvas');
+    if (!container) return;
+    
+    isInitializing = true;
+    
+    // Check for reduced motion preference
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    if (prefersReducedMotion) {
+      // Show static globe for users who prefer reduced motion
+      container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#d4af37;font-size:8rem;">🌍</div>';
+      isInitializing = false;
+      return;
+    }
+    
+    // Load Three.js dynamically
+    const threeLoaded = await loadThreeJS();
+    
+    if (!threeLoaded) {
+      // Fallback to static globe emoji
+      container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#d4af37;font-size:8rem;">🌍</div>';
+      isInitializing = false;
+      return;
+    }
+
+    // Load Globe module
+    const globeLoaded = await loadGlobeModule();
+    
+    if (!globeLoaded) {
+      // Fallback to static globe emoji
+      container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#d4af37;font-size:8rem;">🌍</div>';
+      isInitializing = false;
+      return;
+    }
+    
+    // Small delay to ensure container is ready
+    setTimeout(async () => {
+      try {
+        // Set THREE as global variable for the AtlasGlobe class
+        (window as any).THREE = THREE;
+        
+        // Get the mode from the container class
+        const container = document.querySelector('.globe-container');
+        const mode = container?.classList.contains('fullscreen') ? 'fullscreen' : 'standard';
+        
+        // Initialize AtlasGlobe with mode-aware configuration
+        const globeConfig = {
+          container: '#globe-canvas',
+          mode: mode,
+          colors: {
+            ocean: '#001122',
+            land: '#d4af37',
+            stroke: '#cd7f32',
+            atmosphere: 0xd4af37,
+            light: 0xd4af37
+          },
+          animation: {
+            autoRotationSpeed: 0.005,
+            friction: 0.95,
+            rotationSpeed: 0.008
+          },
+          features: {
+            cityLights: true,
+            atmosphere: true,
+            dragControls: true
+          }
+        };
+        
+        atlasGlobe = new AtlasGlobe(globeConfig);
+        atlasGlobe.setThreeJS(THREE);
+        await atlasGlobe.init();
+        
+        console.log('Enhanced Atlas Globe initialized successfully');
+        isInitializing = false;
+      } catch (error) {
+        console.error('Atlas Globe initialization failed:', error);
+        // Show error state
+        const container = document.getElementById('globe-canvas');
+        if (container) {
+          container.innerHTML = `
+            <div class="globe-error">
+              <div class="error-icon">🌍</div>
+              <p>Globe unavailable</p>
+            </div>
+          `;
+        }
+        isInitializing = false;
+      }
+    }, 100);
+  }
+
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', initializeGlobe);
+  
+  // Reinitialize on view transitions (for client-side routing)
+  document.addEventListener('astro:page-load', initializeGlobe);
+  
+  // Clean up when navigating away
+  document.addEventListener('astro:before-preparation', cleanupGlobe);
+</script>
 
 <style>
   .globe-container {
@@ -14,26 +168,135 @@
     align-items: center;
     position: relative;
   }
-  #globe-canvas {
-    width: min(400px,90vw);
-    height: min(400px,90vw);
-    max-width: 400px;
-    max-height: 400px;
+
+  /* Standard mode styles (default) */
+  .globe-container.standard #globe-canvas {
+    width: min(600px, 90vw);
+    height: min(600px, 90vw);
+    max-width: 600px;
+    max-height: 600px;
+    position: relative;
     animation: float 6s ease-in-out infinite;
-    filter: drop-shadow(0 0 30px rgba(212,175,55,0.3));
-    transition: transform .3s ease;
+    filter: drop-shadow(0 0 40px rgba(212, 175, 55, 0.4));
+    transition: transform 0.3s ease;
   }
+
+  .globe-container.standard #globe-canvas:hover {
+    transform: scale(1.05);
+  }
+
+  /* Fullscreen mode styles */
+  .globe-container.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.95);
+  }
+
+  .globe-container.fullscreen #globe-canvas {
+    width: min(85vw, 85vh);
+    height: min(85vw, 85vh);
+    max-width: none;
+    max-height: none;
+    position: relative;
+    animation: float 8s ease-in-out infinite;
+    filter: drop-shadow(0 0 60px rgba(212, 175, 55, 0.6));
+    transition: transform 0.3s ease;
+  }
+
+  .globe-container.fullscreen #globe-canvas:hover {
+    transform: scale(1.02);
+  }
+
+  #globe-canvas :global(canvas) {
+    border-radius: 50%;
+  }
+
+  .globe-error {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: var(--color-accent-gold);
+  }
+
+  .globe-error p {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .error-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+  }
+
   @keyframes float {
-    0%,100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
   }
+
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Respect reduced motion preferences */
   @media (prefers-reduced-motion: reduce) {
-    #globe-canvas { animation: none; transform: none; }
+    #globe-canvas {
+      animation: none;
+    }
+    
+    #globe-canvas:hover {
+      transform: none;
+    }
   }
+
   @media (max-width: 768px) {
-    #globe-canvas { width: min(300px, 80vw); height: min(300px, 80vw); }
+    .globe-container.standard #globe-canvas {
+      width: min(450px, 85vw);
+      height: min(450px, 85vw);
+    }
+    
+    .globe-container.standard #globe-canvas:hover {
+      transform: scale(1.02); /* Less aggressive scaling on mobile */
+    }
+    
+    .globe-container.fullscreen #globe-canvas {
+      width: min(75vw, 75vh);
+      height: min(75vw, 75vh);
+    }
   }
+
   @media (max-width: 480px) {
-    #globe-canvas { width: min(250px, 75vw); height: min(250px, 75vw); }
+    .globe-container.standard #globe-canvas {
+      width: min(350px, 80vw);
+      height: min(350px, 80vw);
+    }
+    
+    .globe-container.fullscreen #globe-canvas {
+      width: min(70vw, 70vh);
+      height: min(70vw, 70vh);
+    }
   }
 </style>
