@@ -12,6 +12,7 @@ const { mode = 'standard' } = Astro.props;
     <div id="globe-description" class="sr-only">
       An interactive 3D globe that can be rotated by clicking and dragging. The globe shows world continents and represents Atlas Divisions' global reach.
     </div>
+    <!-- Loading spinner removed for performance -->
   </div>
 </div>
 
@@ -23,6 +24,8 @@ const { mode = 'standard' } = Astro.props;
   // Initialize globe when component loads with dynamic import
   let atlasGlobe: any = null;
   let isInitializing = false; // Prevent duplicate initialization
+  // Loading spinner logic removed for performance
+  function updateGlobeLoading(stepIdx: number) {}
   
   function cleanupGlobe() {
     if (atlasGlobe && atlasGlobe.dispose) {
@@ -64,6 +67,7 @@ const { mode = 'standard' } = Astro.props;
     if (!container) return;
     
     isInitializing = true;
+    updateGlobeLoading(0);
     
     // Check for reduced motion preference
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -77,6 +81,7 @@ const { mode = 'standard' } = Astro.props;
     
     // Load Three.js dynamically
     const threeLoaded = await loadThreeJS();
+    updateGlobeLoading(1);
     
     if (!threeLoaded) {
       // Fallback to static globe emoji
@@ -87,6 +92,7 @@ const { mode = 'standard' } = Astro.props;
 
     // Load Globe module
     const globeLoaded = await loadGlobeModule();
+    updateGlobeLoading(2);
     
     if (!globeLoaded) {
       // Fallback to static globe emoji
@@ -130,8 +136,10 @@ const { mode = 'standard' } = Astro.props;
         
         atlasGlobe = new AtlasGlobe(globeConfig);
         atlasGlobe.setThreeJS(THREE);
-        await atlasGlobe.init();
-        
+
+        // Use new staggered loading in AtlasGlobe.init
+        await atlasGlobe.init(updateGlobeLoading);
+
         console.log('Enhanced Atlas Globe initialized successfully');
         isInitializing = false;
       } catch (error) {
@@ -159,6 +167,46 @@ const { mode = 'standard' } = Astro.props;
   
   // Clean up when navigating away
   document.addEventListener('astro:before-preparation', cleanupGlobe);
+  // Phoenix drag logic
+  let isPhoenixDragging = false;
+  let lastPhoenixPos = { x: 0, y: 0 };
+
+  function onPhoenixPointerDown(e) {
+    isPhoenixDragging = true;
+    lastPhoenixPos = { x: e.clientX, y: e.clientY };
+    document.body.style.cursor = "grabbing";
+  }
+
+  function onPhoenixPointerMove(e) {
+    if (!isPhoenixDragging || !atlasGlobe) return;
+    const dx = e.clientX - lastPhoenixPos.x;
+    const dy = e.clientY - lastPhoenixPos.y;
+    lastPhoenixPos = { x: e.clientX, y: e.clientY };
+    // Call a method to rotate the globe in 3D (to be implemented in AtlasGlobe)
+    if (atlasGlobe.rotateGlobeByPhoenix) {
+      atlasGlobe.rotateGlobeByPhoenix(dx, dy);
+    }
+  }
+
+  function onPhoenixPointerUp() {
+    isPhoenixDragging = false;
+    document.body.style.cursor = "";
+    // Snap back to default orientation (to be implemented in AtlasGlobe)
+    if (atlasGlobe && atlasGlobe.snapBackGlobeOrientation) {
+      atlasGlobe.snapBackGlobeOrientation();
+    }
+  }
+
+  // Attach Phoenix drag listeners after DOM loads
+  document.addEventListener('DOMContentLoaded', () => {
+    const phoenix = document.getElementById('phoenix-handle');
+    if (phoenix) {
+      phoenix.addEventListener('pointerdown', onPhoenixPointerDown);
+      window.addEventListener('pointermove', onPhoenixPointerMove);
+      window.addEventListener('pointerup', onPhoenixPointerUp);
+      phoenix.addEventListener('dragstart', e => e.preventDefault());
+    }
+  });
 </script>
 
 <style>
@@ -239,6 +287,10 @@ const { mode = 'standard' } = Astro.props;
     margin-bottom: 0.5rem;
   }
 
+  @keyframes spin {
+    0% { transform: rotate(0deg);}
+    100% { transform: rotate(360deg);}
+  }
   @keyframes float {
     0%, 100% {
       transform: translateY(0px);
@@ -298,5 +350,14 @@ const { mode = 'standard' } = Astro.props;
       width: min(70vw, 70vh);
       height: min(70vw, 70vh);
     }
+  }
+  #phoenix-handle {
+    transition: filter 0.2s;
+    filter: drop-shadow(0 0 8px #d4af37);
+    pointer-events: auto;
+  }
+  #phoenix-handle:active {
+    filter: drop-shadow(0 0 16px #d4af37) brightness(1.2);
+    cursor: grabbing;
   }
 </style>
