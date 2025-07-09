@@ -51,7 +51,6 @@ export class AtlasGlobe {
     this.camera = null;
     this.renderer = null;
     this.globeMesh = null;
-    this.cityLightsGroup = null;
     
     // Interaction properties
     this.isDragging = false;
@@ -313,7 +312,7 @@ export class AtlasGlobe {
   }
 
   /**
-   * Load Cinzano lightmap for emissive mapping
+   * Load Earth lightmap for emissive mapping
    */
   async loadCinzanoLightmap() {
     try {
@@ -335,7 +334,7 @@ export class AtlasGlobe {
       console.log('Earth lightmap loaded successfully');
       return texture;
     } catch (error) {
-      console.warn('Failed to load Cinzano lightmap:', error);
+      console.warn('Failed to load Earth lightmap:', error);
       return null;
     }
   }
@@ -537,9 +536,6 @@ export class AtlasGlobe {
       if (this.isDragging) {
         // Direct rotation while dragging
         this.globeMesh.rotation.y += this.rotationVelocity.y;
-        if (this.cityLightsGroup) {
-          this.cityLightsGroup.rotation.y += this.rotationVelocity.y;
-        }
       } else {
         // Apply friction to momentum
         this.rotationVelocity.y *= this.friction;
@@ -547,16 +543,10 @@ export class AtlasGlobe {
         // Continue momentum or return to auto-rotation
         if (Math.abs(this.rotationVelocity.y) > 0.001) {
           this.globeMesh.rotation.y += this.rotationVelocity.y;
-          if (this.cityLightsGroup) {
-            this.cityLightsGroup.rotation.y += this.rotationVelocity.y;
-          }
         } else {
           // Return to auto-rotation when momentum stops
           this.rotationVelocity.y = 0;
           this.globeMesh.rotation.y += this.autoRotationSpeed;
-          if (this.cityLightsGroup) {
-            this.cityLightsGroup.rotation.y += this.autoRotationSpeed;
-          }
         }
       }
       
@@ -583,13 +573,17 @@ export class AtlasGlobe {
     
     // Remove event listeners
     if (this.container && this.features.dragControls) {
-      this.container.removeEventListener('mousedown', this.onMouseDown);
-      this.container.removeEventListener('mousemove', this.onMouseMove);
-      this.container.removeEventListener('mouseup', this.onMouseUp);
-      this.container.removeEventListener('mouseleave', this.onMouseLeave);
-      this.container.removeEventListener('touchstart', this.onTouchStart);
-      this.container.removeEventListener('touchmove', this.onTouchMove);
-      this.container.removeEventListener('touchend', this.onTouchEnd);
+      this.container.removeEventListener('mousedown', this.onMouseDown.bind(this));
+      this.container.removeEventListener('mousemove', this.onMouseMove.bind(this));
+      this.container.removeEventListener('mouseup', this.onMouseUp.bind(this));
+      this.container.removeEventListener('mouseleave', this.onMouseLeave.bind(this));
+      this.container.removeEventListener('touchstart', this.onTouchStart.bind(this));
+      this.container.removeEventListener('touchmove', this.onTouchMove.bind(this));
+      this.container.removeEventListener('touchend', this.onTouchEnd.bind(this));
+    }
+    
+    if (window.removeEventListener) {
+      window.removeEventListener('resize', this.onWindowResize.bind(this));
     }
   }
 }
