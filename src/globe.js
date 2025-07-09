@@ -265,7 +265,7 @@ export class AtlasGlobe {
     const material = new THREE.MeshPhongMaterial({
       map: blackMarbleTexture,              // Main texture shows night lights colors
       emissiveMap: customLightmap,          // Your custom lightmap controls glow
-      emissive: new THREE.Color(0xfff4e6),  // Warm white glow
+      emissive: new THREE.Color(0xffcc00),  // Gold glow to match site theme
       emissiveIntensity: 0.3,               // Moderate intensity
       transparent: false,
       shininess: 1
