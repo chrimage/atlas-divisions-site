@@ -286,18 +286,42 @@ export class AtlasGlobe {
     this.globeGroup.rotation.y = Math.PI; // 180° so 0° longitude is at front
     this.globeGroup.rotation.x = 0.4102; // 23.5 degrees tilt
 
-    // Globe mesh
-    this.globeMesh = new THREE.Mesh(geometry, texture ? new THREE.MeshPhongMaterial({
-      map: texture,
-      transparent: false,
-      shininess: 1
-    }) : undefined);
-    // No per-mesh rotation!
-    this.globeGroup.add(this.globeMesh);
-
+    });
+    
+    this.globeMesh = new THREE.Mesh(geometry, material);
+    this.globeMesh.rotation.x = 0.1; // Slight tilt
+    this.scene.add(this.globeMesh);
+    
+    if (this.features.atmosphere) {
+      this.createAtmosphere();
+    }
+    
+>>>>>>> upstream/master
     // Initialize with auto-rotation
     this.rotationVelocity.x = 0;
     this.rotationVelocity.y = this.autoRotationSpeed;
+=======
+    });
+    
+    this.globeMesh = new THREE.Mesh(geometry, material);
+    this.globeMesh.rotation.x = 0.1; // Slight tilt
+    this.scene.add(this.globeMesh);
+    
+    if (this.features.atmosphere) {
+      this.createAtmosphere();
+    }
+    
+>>>>>>> upstream/master
+    // Initialize with auto-rotation
+    this.rotationVelocity.x = 0;
+    this.rotationVelocity.y = this.autoRotationSpeed;
+    
+    // Load city lights asynchronously after globe is visible
+    if (this.features.cityLights) {
+      this.addCityLights().catch(err => {
+        console.error('Failed to load city lights:', err);
+      });
+    }
   }
 
   /**
@@ -572,8 +596,12 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
         allCities.push({ x, y, z, population, color: lightColor, name: parts[0], size, intensity });
       });
       
-      this.createIndividualCityLights(allCities);
-      console.log(`City lights optimized: ${allCities.length} cities with population-based scaling`);
+      // Sort cities by population (largest first) for better visual progression
+      allCities.sort((a, b) => b.population - a.population);
+      
+      // Add cities progressively for better loading experience
+      await this.createCityLightsProgressively(allCities);
+      console.log(`City lights loaded: ${allCities.length} cities with population-based scaling`);
     } catch (err) {
       console.error('Failed to add city lights:', err);
     }
@@ -598,6 +626,40 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
       mesh.position.set(city.x, city.y, city.z);
       this.cityLightsGroup.add(mesh);
     });
+  }
+  
+  /**
+   * Create city lights progressively for better loading experience
+   */
+  async createCityLightsProgressively(cities) {
+    if (cities.length === 0) return;
+    
+    const batchSize = 25; // Add 25 cities at a time
+    const delayBetweenBatches = 50; // 50ms delay between batches
+    
+    for (let i = 0; i < cities.length; i += batchSize) {
+      const batch = cities.slice(i, i + batchSize);
+      
+      // Add this batch of cities
+      batch.forEach(city => {
+        const geometry = new THREE.SphereGeometry(city.size, 8, 8);
+        const material = new THREE.MeshBasicMaterial({
+          transparent: true,
+          opacity: city.intensity,
+          blending: THREE.AdditiveBlending,
+          color: city.color
+        });
+        
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(city.x, city.y, city.z);
+        this.cityLightsGroup.add(mesh);
+      });
+      
+      // Small delay to create progressive loading effect
+      if (i + batchSize < cities.length) {
+        await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+      }
+    }
   }
   
   /**
