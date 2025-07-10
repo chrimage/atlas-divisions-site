@@ -55,7 +55,12 @@ export class AtlasGlobe {
     // Interaction properties
     this.isDragging = false;
     this.previousMousePosition = { x: 0, y: 0 };
-    this.rotationVelocity = { x: 0, y: 0 };
+    this.cameraOrbitVelocity = { x: 0, y: 0 };
+    
+    // Camera orbit properties
+    this.cameraRadius = this.sizeConfig ? this.sizeConfig.cameraDistance : 6;
+    this.cameraTheta = 0; // Horizontal orbit angle
+    this.cameraPhi = Math.PI / 2; // Vertical orbit angle (start at equator)
     
     // Configuration with defaults
     this.config = this.mergeConfig(config);
@@ -240,8 +245,9 @@ export class AtlasGlobe {
       this.renderer.setClearColor(0x000000, 0);
       this.container.appendChild(this.renderer.domElement);
       
-      // Use dynamic camera distance based on mode
-      this.camera.position.z = this.sizeConfig.cameraDistance;
+      // Set initial camera position using orbit system
+      this.cameraRadius = this.sizeConfig.cameraDistance;
+      this.updateCameraPosition();
       
       this.createGlobe();
       this.setupLighting();
@@ -278,20 +284,21 @@ export class AtlasGlobe {
       this.createAtmosphere();
     }
     
-    // Initialize with auto-rotation
-    this.rotationVelocity.x = 0;
-    this.rotationVelocity.y = this.autoRotationSpeed;
+    // Initialize with globe rotation only (no auto camera orbit)
+    this.cameraOrbitVelocity.x = 0;
+    this.cameraOrbitVelocity.y = 0;
+    this.rotationVelocity = { x: 0, y: this.autoRotationSpeed };
   }
   
   /**
-   * Load black marble texture for main surface
+   * Load day map texture for main surface
    */
   async loadBlackMarbleTexture() {
     try {
       const textureLoader = new THREE.TextureLoader();
       const texture = await new Promise((resolve, reject) => {
         textureLoader.load(
-          '/js/black_marble_texture.png',
+          'https://clouds.matteason.co.uk/images/2048x1024/earth.jpg',
           resolve,
           undefined,
           reject
@@ -303,10 +310,10 @@ export class AtlasGlobe {
       texture.minFilter = THREE.LinearFilter;
       texture.magFilter = THREE.LinearFilter;
       
-      console.log('Black marble texture loaded successfully');
+      console.log('Day map texture loaded successfully');
       return texture;
     } catch (error) {
-      console.warn('Failed to load black marble texture:', error);
+      console.warn('Failed to load day map texture:', error);
       return null;
     }
   }
@@ -355,23 +362,34 @@ export class AtlasGlobe {
   }
   
   /**
+   * Update camera position based on orbit angles
+   */
+  updateCameraPosition() {
+    // Convert spherical coordinates to Cartesian
+    const x = this.cameraRadius * Math.sin(this.cameraPhi) * Math.cos(this.cameraTheta);
+    const y = this.cameraRadius * Math.cos(this.cameraPhi);
+    const z = this.cameraRadius * Math.sin(this.cameraPhi) * Math.sin(this.cameraTheta);
+    
+    this.camera.position.set(x, y, z);
+    this.camera.lookAt(0, 0, 0); // Always look at the center of the globe
+  }
+
+  /**
    * Setup lighting for "dark side of Earth" view
    */
   setupLighting() {
-    // Increased ambient light to better see the main texture
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.125);
-    this.scene.add(ambientLight);
+    // No ambient light - pure directional lighting from the sun
     
     // Sun positioned on the far side of Earth from camera
     // Camera is at positive Z, so sun should be at negative Z
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
     directionalLight.position.set(0, 0, -10); // Far behind the globe
     directionalLight.target.position.set(0, 0, 0); // Point toward Earth center
     
     this.scene.add(directionalLight);
     this.scene.add(directionalLight.target);
     
-    console.log('Dark side lighting: Sun behind Earth, camera viewing night side');
+    console.log('Pure directional lighting: Sun behind Earth, no ambient light');
   }
   
   
@@ -486,7 +504,7 @@ export class AtlasGlobe {
   }
   
   /**
-   * Update rotation based on mouse/touch movement
+   * Update camera orbit based on mouse/touch movement
    */
   updateRotation(clientX, clientY) {
     if (!this.container) return;
@@ -497,10 +515,11 @@ export class AtlasGlobe {
     };
     
     const deltaX = currentMousePosition.x - this.previousMousePosition.x;
+    const deltaY = currentMousePosition.y - this.previousMousePosition.y;
     
-    // Only allow Y-axis rotation (horizontal dragging)
-    this.rotationVelocity.x = 0;
-    this.rotationVelocity.y = deltaX * this.rotationSpeed;
+    // Update camera orbit velocities
+    this.cameraOrbitVelocity.y = deltaX * this.rotationSpeed; // Horizontal orbit
+    this.cameraOrbitVelocity.x = deltaY * this.rotationSpeed; // Vertical orbit
     
     this.previousMousePosition = currentMousePosition;
   }
@@ -532,26 +551,42 @@ export class AtlasGlobe {
   animate() {
     requestAnimationFrame(this.animate.bind(this));
     
-    if (this.globeMesh) {
+    if (this.camera) {
       if (this.isDragging) {
-        // Direct rotation while dragging
-        this.globeMesh.rotation.y += this.rotationVelocity.y;
+        // Direct camera orbit while dragging
+        this.cameraTheta += this.cameraOrbitVelocity.y;
+        this.cameraPhi += this.cameraOrbitVelocity.x;
+        
+        // Clamp vertical angle to prevent camera from going through poles
+        this.cameraPhi = Math.max(0.1, Math.min(Math.PI - 0.1, this.cameraPhi));
+        
+        this.updateCameraPosition();
       } else {
         // Apply friction to momentum
-        this.rotationVelocity.y *= this.friction;
+        this.cameraOrbitVelocity.y *= this.friction;
+        this.cameraOrbitVelocity.x *= this.friction;
         
-        // Continue momentum or return to auto-rotation
-        if (Math.abs(this.rotationVelocity.y) > 0.001) {
-          this.globeMesh.rotation.y += this.rotationVelocity.y;
+        // Continue momentum or return to auto-orbit
+        if (Math.abs(this.cameraOrbitVelocity.y) > 0.001 || Math.abs(this.cameraOrbitVelocity.x) > 0.001) {
+          this.cameraTheta += this.cameraOrbitVelocity.y;
+          this.cameraPhi += this.cameraOrbitVelocity.x;
+          
+          // Clamp vertical angle
+          this.cameraPhi = Math.max(0.1, Math.min(Math.PI - 0.1, this.cameraPhi));
+          
+          this.updateCameraPosition();
         } else {
-          // Return to auto-rotation when momentum stops
-          this.rotationVelocity.y = 0;
-          this.globeMesh.rotation.y += this.autoRotationSpeed;
+          // Stop camera orbit when momentum stops (no auto-orbit)
+          this.cameraOrbitVelocity.y = 0;
+          this.cameraOrbitVelocity.x = 0;
         }
       }
       
-      // Keep the slight tilt (locked X-axis)
-      this.globeMesh.rotation.x = 0.1;
+      // Keep globe rotating with slight tilt
+      if (this.globeMesh) {
+        this.globeMesh.rotation.y += this.rotationVelocity.y;
+        this.globeMesh.rotation.x = 0.1;
+      }
     }
     
     this.renderer.render(this.scene, this.camera);
