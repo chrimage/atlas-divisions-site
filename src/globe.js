@@ -51,7 +51,6 @@ export class AtlasGlobe {
     this.camera = null;
     this.renderer = null;
     this.globeMesh = null;
-    this.cityLightsGroup = null;
     
     // Interaction properties
     this.isDragging = false;
@@ -251,14 +250,22 @@ export class AtlasGlobe {
   }
   
   /**
-   * Create the globe mesh with texture
+   * Create the globe mesh with night lights texture
    */
   async createGlobe() {
     const geometry = new THREE.SphereGeometry(this.sizeConfig.sphereRadius, 64, 64);
-    const texture = await this.createAtlasTexture();
+    
+    // Load both textures - black marble for main surface, custom lightmap for emissive
+    const [blackMarbleTexture, customLightmap] = await Promise.all([
+      this.loadBlackMarbleTexture(),
+      this.loadCinzanoLightmap()
+    ]);
     
     const material = new THREE.MeshPhongMaterial({
-      map: texture,
+      map: blackMarbleTexture,              // Main texture shows night lights colors
+      emissiveMap: customLightmap,          // Your custom lightmap controls glow
+      emissive: new THREE.Color(0xffcc00),  // Gold glow to match site theme
+      emissiveIntensity: 0.3,               // Moderate intensity
       transparent: false,
       shininess: 1
     });
@@ -274,12 +281,61 @@ export class AtlasGlobe {
     // Initialize with auto-rotation
     this.rotationVelocity.x = 0;
     this.rotationVelocity.y = this.autoRotationSpeed;
-    
-    // Load city lights asynchronously after globe is visible
-    if (this.features.cityLights) {
-      this.addCityLights().catch(err => {
-        console.error('Failed to load city lights:', err);
+  }
+  
+  /**
+   * Load black marble texture for main surface
+   */
+  async loadBlackMarbleTexture() {
+    try {
+      const textureLoader = new THREE.TextureLoader();
+      const texture = await new Promise((resolve, reject) => {
+        textureLoader.load(
+          '/js/black_marble_texture.png',
+          resolve,
+          undefined,
+          reject
+        );
       });
+      
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      
+      console.log('Black marble texture loaded successfully');
+      return texture;
+    } catch (error) {
+      console.warn('Failed to load black marble texture:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Load Earth lightmap for emissive mapping
+   */
+  async loadCinzanoLightmap() {
+    try {
+      const textureLoader = new THREE.TextureLoader();
+      const texture = await new Promise((resolve, reject) => {
+        textureLoader.load(
+          '/js/earth_lightmap.png',
+          resolve,
+          undefined,
+          reject
+        );
+      });
+      
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      
+      console.log('Earth lightmap loaded successfully');
+      return texture;
+    } catch (error) {
+      console.warn('Failed to load Earth lightmap:', error);
+      return null;
     }
   }
   
@@ -299,325 +355,25 @@ export class AtlasGlobe {
   }
   
   /**
-   * Setup lighting system
+   * Setup lighting for "dark side of Earth" view
    */
   setupLighting() {
-    const ambientLight = new THREE.AmbientLight(this.atlasColors.light, 0.35);
+    // Increased ambient light to better see the main texture
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.125);
     this.scene.add(ambientLight);
     
-    const directionalLight = new THREE.DirectionalLight(this.atlasColors.light, 0.6);
+    // Sun positioned on the far side of Earth from camera
+    // Camera is at positive Z, so sun should be at negative Z
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(0, 0, -10); // Far behind the globe
+    directionalLight.target.position.set(0, 0, 0); // Point toward Earth center
     
-    // Position light to create realistic day/night terminator
-    const sunLon = -120; // Pacific daylight
-    const sunLat = 0;
-    const sunPhi = (90 - sunLat) * (Math.PI / 180);
-    const sunTheta = (sunLon + 180) * (Math.PI / 180);
-    
-    const sunX = 5 * Math.sin(sunPhi) * Math.cos(sunTheta);
-    const sunY = 5 * Math.cos(sunPhi);
-    const sunZ = 5 * Math.sin(sunPhi) * Math.sin(sunTheta);
-    
-    directionalLight.position.set(sunX, sunY, sunZ);
     this.scene.add(directionalLight);
+    this.scene.add(directionalLight.target);
+    
+    console.log('Dark side lighting: Sun behind Earth, camera viewing night side');
   }
   
-  /**
-   * Create texture with world map and city lights
-   */
-  async createAtlasTexture() {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.sizeConfig.textureSize.width;
-    canvas.height = this.sizeConfig.textureSize.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return new THREE.CanvasTexture(canvas);
-    
-    ctx.fillStyle = this.atlasColors.ocean;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    try {
-      const response = await fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson');
-      const geoData = await response.json();
-      await this.drawWorldMap(ctx, geoData, canvas.width, canvas.height);
-    } catch (error) {
-      console.log('Using fallback map');
-      this.drawFallbackMap(ctx, canvas.width, canvas.height);
-      if (this.features.cityLights) {
-        await this.drawCityLights(ctx, canvas.width, canvas.height);
-      }
-    }
-    
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
-    return texture;
-  }
-  
-  /**
-   * Draw world map from GeoJSON data
-   */
-  async drawWorldMap(ctx, geoData, width, height) {
-    ctx.fillStyle = this.atlasColors.land;
-    ctx.strokeStyle = this.atlasColors.stroke;
-    ctx.lineWidth = 1;
-    
-    geoData.features.forEach((feature) => {
-      if (feature.geometry.type === 'Polygon') {
-        this.drawPolygon(ctx, feature.geometry.coordinates, width, height);
-      } else if (feature.geometry.type === 'MultiPolygon') {
-        feature.geometry.coordinates.forEach((polygon) => {
-          this.drawPolygon(ctx, polygon, width, height);
-        });
-      }
-    });
-
-    if (this.features.cityLights) {
-      await this.drawCityLights(ctx, width, height);
-    }
-  }
-  
-  /**
-   * Draw polygon on canvas
-   */
-  drawPolygon(ctx, coordinates, width, height) {
-    coordinates.forEach((ring) => {
-      ctx.beginPath();
-      ring.forEach((coord, index) => {
-        const x = ((coord[0] + 180) / 360) * width;
-        const y = ((90 - coord[1]) / 180) * height;
-        
-        if (index === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      });
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-    });
-  }
-  
-  /**
-   * Draw fallback map with simple continent shapes
-   */
-  drawFallbackMap(ctx, width, height) {
-    const continents = [
-      { x: 0.2, y: 0.3, w: 0.25, h: 0.4 }, // North America
-      { x: 0.25, y: 0.5, w: 0.15, h: 0.35 }, // South America
-      { x: 0.48, y: 0.25, w: 0.12, h: 0.15 }, // Europe
-      { x: 0.5, y: 0.35, w: 0.15, h: 0.4 }, // Africa
-      { x: 0.6, y: 0.2, w: 0.3, h: 0.35 }, // Asia
-      { x: 0.75, y: 0.65, w: 0.12, h: 0.1 } // Australia
-    ];
-    
-    ctx.fillStyle = this.atlasColors.land;
-    continents.forEach(continent => {
-      ctx.fillRect(
-        continent.x * width,
-        continent.y * height,
-        continent.w * width,
-        continent.h * height
-      );
-    });
-  }
-  
-  /**
-   * Add 3D city lights from CSV data
-   */
-  async addCityLights() {
-    try {
-      const csvRes = await fetch('/js/world-cities.csv');
-      if (!csvRes.ok) return;
-      const csvText = await csvRes.text();
-      const lines = csvText.split('\n').slice(1);
-      
-      this.cityLightsGroup = new THREE.Group();
-      this.cityLightsGroup.rotation.x = 0.1; // Match globe tilt
-      this.scene.add(this.cityLightsGroup);
-      
-      const allCities = [];
-      
-      lines.forEach(line => {
-        const parts = line.split(',');
-        if (parts.length < 10) return;
-        
-        const lat = parseFloat(parts[2].replace(/"/g, ''));
-        const lon = parseFloat(parts[3].replace(/"/g, ''));
-        const population = parseInt(parts[9].replace(/"/g, ''), 10);
-        const country = parts[4].replace(/"/g, '');
-        
-        if (isNaN(lat) || isNaN(lon) || isNaN(population) || population < 2000000) return;
-        
-        // Convert coordinates to 3D position
-        const phi = (90 - lat) * (Math.PI / 180);
-        const theta = (-lon) * (Math.PI / 180);
-        const radius = this.sizeConfig.sphereRadius + 0.01;
-        
-        const x = radius * Math.sin(phi) * Math.cos(theta);
-        const y = radius * Math.cos(phi);
-        const z = radius * Math.sin(phi) * Math.sin(theta);
-        
-        // Calculate size and intensity based on population
-        const minPop = 2000000;
-        const maxPop = 38000000;
-        const popNormalized = Math.min(1, Math.max(0, (Math.log10(population) - Math.log10(minPop)) / (Math.log10(maxPop) - Math.log10(minPop))));
-        
-        const size = this.sizeConfig.cityLightSize.base + popNormalized * this.sizeConfig.cityLightSize.multiplier;
-        const intensity = 0.25 + popNormalized * 0.45;
-        
-        // Determine light color based on region
-        let lightColor = 0xffffff;
-        if (country === 'China' || country === 'India') {
-          lightColor = 0xfff8e1;
-        } else if (country === 'United States' || country === 'United Kingdom' || country === 'Japan') {
-          lightColor = 0xf0f8ff;
-        } else if (country === 'Nigeria' || country === 'Pakistan' || country === 'Bangladesh') {
-          lightColor = 0xffa500;
-        } else if (country === 'Brazil' || country === 'Argentina' || country === 'Chile') {
-          lightColor = 0xfff5dc;
-        }
-        
-        allCities.push({ x, y, z, population, color: lightColor, name: parts[0], size, intensity });
-      });
-      
-      // Sort cities by population (largest first) for better visual progression
-      allCities.sort((a, b) => b.population - a.population);
-      
-      // Add cities progressively for better loading experience
-      await this.createCityLightsProgressively(allCities);
-      console.log(`City lights loaded: ${allCities.length} cities with population-based scaling`);
-    } catch (err) {
-      console.error('Failed to add city lights:', err);
-    }
-  }
-  
-  /**
-   * Create individual city light meshes
-   */
-  createIndividualCityLights(cities) {
-    if (cities.length === 0) return;
-    
-    cities.forEach(city => {
-      const geometry = new THREE.SphereGeometry(city.size, 8, 8);
-      const material = new THREE.MeshBasicMaterial({
-        transparent: true,
-        opacity: city.intensity,
-        blending: THREE.AdditiveBlending,
-        color: city.color
-      });
-      
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set(city.x, city.y, city.z);
-      this.cityLightsGroup.add(mesh);
-    });
-  }
-  
-  /**
-   * Create city lights progressively for better loading experience
-   */
-  async createCityLightsProgressively(cities) {
-    if (cities.length === 0) return;
-    
-    const batchSize = 25; // Add 25 cities at a time
-    const delayBetweenBatches = 50; // 50ms delay between batches
-    
-    for (let i = 0; i < cities.length; i += batchSize) {
-      const batch = cities.slice(i, i + batchSize);
-      
-      // Add this batch of cities
-      batch.forEach(city => {
-        const geometry = new THREE.SphereGeometry(city.size, 8, 8);
-        const material = new THREE.MeshBasicMaterial({
-          transparent: true,
-          opacity: city.intensity,
-          blending: THREE.AdditiveBlending,
-          color: city.color
-        });
-        
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(city.x, city.y, city.z);
-        this.cityLightsGroup.add(mesh);
-      });
-      
-      // Small delay to create progressive loading effect
-      if (i + batchSize < cities.length) {
-        await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
-      }
-    }
-  }
-  
-  /**
-   * Draw city lights on texture canvas
-   */
-  async drawCityLights(ctx, width, height) {
-    try {
-      const csvRes = await fetch('/js/world-cities.csv');
-      if (!csvRes.ok) throw new Error('Failed to load city lights CSV: ' + csvRes.status);
-      const csvText = await csvRes.text();
-      const lines = csvText.split('\n').slice(1);
-      
-      ctx.save();
-      ctx.globalAlpha = 0.9;
-      let cityCount = 0;
-      
-      lines.forEach(line => {
-        const parts = line.split(',');
-        if (parts.length < 10) return;
-        
-        const lat = parseFloat(parts[2].replace(/"/g, ''));
-        const lon = parseFloat(parts[3].replace(/"/g, ''));
-        const population = parseInt(parts[9].replace(/"/g, ''), 10);
-        const country = parts[4].replace(/"/g, '');
-        
-        if (isNaN(lat) || isNaN(lon) || isNaN(population) || population <= 0) return;
-        
-        const x = ((lon + 180) / 360) * width;
-        const y = ((90 - lat) / 180) * height;
-        
-        const maxPop = 40000000;
-        const minRadius = 0.5;
-        const maxRadius = 5;
-        const r = minRadius + (Math.log10(population) / Math.log10(maxPop)) * (maxRadius - minRadius);
-
-        // Color variations based on region
-        let centerColor = 'rgba(255, 255, 255, 1)';
-        let midColor = 'rgba(255, 255, 255, 0.9)';
-        let edgeColor = 'rgba(200, 220, 255, 0)';
-        
-        if (country === 'China' || country === 'India') {
-          centerColor = 'rgba(255, 248, 220, 1)';
-          midColor = 'rgba(255, 248, 220, 0.9)';
-        } else if (country === 'United States' || country === 'United Kingdom' || country === 'Japan') {
-          centerColor = 'rgba(240, 248, 255, 1)';
-          midColor = 'rgba(240, 248, 255, 0.9)';
-        } else if (country === 'Nigeria' || country === 'Pakistan' || country === 'Bangladesh') {
-          centerColor = 'rgba(255, 165, 0, 1)';
-          midColor = 'rgba(255, 165, 0, 0.9)';
-          edgeColor = 'rgba(255, 140, 0, 0)';
-        } else if (country === 'Brazil' || country === 'Argentina' || country === 'Chile') {
-          centerColor = 'rgba(255, 245, 220, 1)';
-          midColor = 'rgba(255, 245, 220, 0.9)';
-        }
-        
-        const grad = ctx.createRadialGradient(x, y, 0, x, y, r * 1.2);
-        grad.addColorStop(0, centerColor);
-        grad.addColorStop(0.1, midColor);
-        grad.addColorStop(0.2, edgeColor);
-        grad.addColorStop(1, 'rgba(100, 150, 255, 0)');
-        
-        ctx.beginPath();
-        ctx.arc(x, y, r * 1.2, 0, 2 * Math.PI);
-        ctx.fillStyle = grad;
-        ctx.fill();
-        cityCount++;
-      });
-      
-      ctx.restore();
-      console.log('City lights drawn:', cityCount);
-    } catch (err) {
-      console.error('City lights error:', err);
-    }
-  }
   
   /**
    * Setup event listeners for drag controls
@@ -780,9 +536,6 @@ export class AtlasGlobe {
       if (this.isDragging) {
         // Direct rotation while dragging
         this.globeMesh.rotation.y += this.rotationVelocity.y;
-        if (this.cityLightsGroup) {
-          this.cityLightsGroup.rotation.y += this.rotationVelocity.y;
-        }
       } else {
         // Apply friction to momentum
         this.rotationVelocity.y *= this.friction;
@@ -790,16 +543,10 @@ export class AtlasGlobe {
         // Continue momentum or return to auto-rotation
         if (Math.abs(this.rotationVelocity.y) > 0.001) {
           this.globeMesh.rotation.y += this.rotationVelocity.y;
-          if (this.cityLightsGroup) {
-            this.cityLightsGroup.rotation.y += this.rotationVelocity.y;
-          }
         } else {
           // Return to auto-rotation when momentum stops
           this.rotationVelocity.y = 0;
           this.globeMesh.rotation.y += this.autoRotationSpeed;
-          if (this.cityLightsGroup) {
-            this.cityLightsGroup.rotation.y += this.autoRotationSpeed;
-          }
         }
       }
       
@@ -826,13 +573,17 @@ export class AtlasGlobe {
     
     // Remove event listeners
     if (this.container && this.features.dragControls) {
-      this.container.removeEventListener('mousedown', this.onMouseDown);
-      this.container.removeEventListener('mousemove', this.onMouseMove);
-      this.container.removeEventListener('mouseup', this.onMouseUp);
-      this.container.removeEventListener('mouseleave', this.onMouseLeave);
-      this.container.removeEventListener('touchstart', this.onTouchStart);
-      this.container.removeEventListener('touchmove', this.onTouchMove);
-      this.container.removeEventListener('touchend', this.onTouchEnd);
+      this.container.removeEventListener('mousedown', this.onMouseDown.bind(this));
+      this.container.removeEventListener('mousemove', this.onMouseMove.bind(this));
+      this.container.removeEventListener('mouseup', this.onMouseUp.bind(this));
+      this.container.removeEventListener('mouseleave', this.onMouseLeave.bind(this));
+      this.container.removeEventListener('touchstart', this.onTouchStart.bind(this));
+      this.container.removeEventListener('touchmove', this.onTouchMove.bind(this));
+      this.container.removeEventListener('touchend', this.onTouchEnd.bind(this));
+    }
+    
+    if (window.removeEventListener) {
+      window.removeEventListener('resize', this.onWindowResize.bind(this));
     }
   }
 }

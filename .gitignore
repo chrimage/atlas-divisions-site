@@ -39,3 +39,6 @@ wrangler.toml
 # AI Stuff
 CLAUDE.md
 .kilocode/
+
+# Scripts folder (experimental/development only)
+scripts/
