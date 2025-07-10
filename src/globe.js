@@ -59,7 +59,7 @@ export class AtlasGlobe {
     
     // Camera orbit properties
     this.cameraRadius = this.sizeConfig ? this.sizeConfig.cameraDistance : 6;
-    this.cameraTheta = 0; // Horizontal orbit angle
+    this.cameraTheta = Math.PI * 0.17; // Position at ~30 degrees to see both day and night
     this.cameraPhi = Math.PI / 2; // Vertical orbit angle (start at equator)
     
     // Configuration with defaults
