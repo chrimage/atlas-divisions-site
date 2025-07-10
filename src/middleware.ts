@@ -31,7 +31,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
-    "img-src 'self' data: https:",
+    "img-src 'self' data: https: blob:",
     "connect-src 'self' https://api.mailgun.net https://raw.githubusercontent.com",
     "frame-src 'none'",
     "object-src 'none'",
