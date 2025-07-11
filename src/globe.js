@@ -373,7 +373,7 @@ export class AtlasGlobe {
       const textureLoader = new THREE.TextureLoader();
       const texture = await new Promise((resolve, reject) => {
         textureLoader.load(
-          '/land_ocean_ice_2048.png',
+          '/land_ocean_ice_2048.webp',
           resolve,
           undefined,
           reject
@@ -401,7 +401,7 @@ export class AtlasGlobe {
       const textureLoader = new THREE.TextureLoader();
       const texture = await new Promise((resolve, reject) => {
         textureLoader.load(
-          '/nightlights.png',
+          '/nightlights.webp',
           resolve,
           undefined,
           reject
