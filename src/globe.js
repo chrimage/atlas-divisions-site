@@ -261,11 +261,10 @@ export class AtlasGlobe {
   async createGlobe() {
     const geometry = new THREE.SphereGeometry(this.sizeConfig.sphereRadius, 64, 64);
     
-    // Load all textures - main surface, lightmap, and cloud map
-    const [blackMarbleTexture, customLightmap, cloudTexture] = await Promise.all([
+    // Load basic textures first for immediate rendering
+    const [blackMarbleTexture, customLightmap] = await Promise.all([
       this.loadBlackMarbleTexture(),
-      this.loadCinzanoLightmap(),
-      this.loadCloudTexture()
+      this.loadCinzanoLightmap()
     ]);
     
     // Create custom shader material for cloud occlusion effect
@@ -274,7 +273,7 @@ export class AtlasGlobe {
         // Day/night textures
         tDiffuse: { value: blackMarbleTexture },
         tEmissive: { value: customLightmap },
-        tClouds: { value: cloudTexture },
+        tClouds: { value: null }, // Start without clouds
         
         // Lighting - fixed sun position in world space
         sunDirection: { value: new THREE.Vector3(0, 0, -1) },
@@ -319,7 +318,6 @@ export class AtlasGlobe {
           // Sample textures
           vec4 diffuseColor = texture2D(tDiffuse, vUv);
           vec4 emissiveMap = texture2D(tEmissive, vUv);
-          vec4 cloudMap = texture2D(tClouds, vUv);
           
           // Calculate lighting from sun direction using world-space normals
           vec3 lightDirection = normalize(sunDirection);
@@ -327,21 +325,27 @@ export class AtlasGlobe {
           
           // Apply diffuse lighting with ambient light
           vec3 diffuse = diffuseColor.rgb * (lightIntensity + ambientLight);
-          
-          // Apply cloud layer with proper day/night behavior
-          float cloudAmount = cloudMap.a;
           vec3 finalColor = diffuse;
           
           // Add nightlights in dark areas
           float darkFactor = 1.0 - lightIntensity;
           vec3 nightlights = emissiveMap.rgb * emissiveColor * emissiveIntensity * darkFactor;
           
-          // Add clouds - let lighting handle brightness naturally
-          vec3 cloudColor = vec3(1.0) * (lightIntensity + ambientLight * 2.0);
-          finalColor += cloudColor * cloudAmount * 0.8;
-          
-          // Add nightlights with cloud occlusion
-          finalColor += nightlights * (1.0 - cloudAmount * 0.6);
+          // Add clouds if texture is loaded
+          if (tClouds != null) {
+            vec4 cloudMap = texture2D(tClouds, vUv);
+            float cloudAmount = cloudMap.a;
+            
+            // Add clouds - let lighting handle brightness naturally
+            vec3 cloudColor = vec3(1.0) * (lightIntensity + ambientLight * 2.0);
+            finalColor += cloudColor * cloudAmount * 0.8;
+            
+            // Add nightlights with cloud occlusion
+            finalColor += nightlights * (1.0 - cloudAmount * 0.6);
+          } else {
+            // No clouds loaded yet - just add nightlights directly
+            finalColor += nightlights;
+          }
           
           gl_FragColor = vec4(finalColor, 1.0);
         }
@@ -363,6 +367,16 @@ export class AtlasGlobe {
     this.cameraOrbitVelocity.x = 0;
     this.cameraOrbitVelocity.y = 0;
     this.rotationVelocity = { x: 0, y: this.autoRotationSpeed };
+    
+    // Load cloud texture asynchronously after globe is rendered
+    this.loadCloudTexture().then(cloudTexture => {
+      if (cloudTexture && this.globeMaterial && this.globeMaterial.uniforms) {
+        this.globeMaterial.uniforms.tClouds.value = cloudTexture;
+        console.log('Cloud texture loaded and applied');
+      }
+    }).catch(error => {
+      console.warn('Cloud texture loading failed, continuing without clouds:', error);
+    });
   }
   
   /**
