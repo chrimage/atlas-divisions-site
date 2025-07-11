@@ -267,13 +267,20 @@ export class AtlasGlobe {
       this.loadCinzanoLightmap()
     ]);
     
+    // Create a 1x1 transparent texture as placeholder for clouds
+    const placeholderTexture = new THREE.DataTexture(
+      new Uint8Array([0, 0, 0, 0]), 1, 1, THREE.RGBAFormat
+    );
+    placeholderTexture.needsUpdate = true;
+
     // Create custom shader material for cloud occlusion effect
     const material = new THREE.ShaderMaterial({
       uniforms: {
         // Day/night textures
         tDiffuse: { value: blackMarbleTexture },
         tEmissive: { value: customLightmap },
-        tClouds: { value: null }, // Start without clouds
+        tClouds: { value: placeholderTexture },
+        cloudsLoaded: { value: 0.0 }, // 0 = no clouds, 1 = clouds loaded
         
         // Lighting - fixed sun position in world space
         sunDirection: { value: new THREE.Vector3(0, 0, -1) },
@@ -303,6 +310,7 @@ export class AtlasGlobe {
         uniform sampler2D tDiffuse;
         uniform sampler2D tEmissive;
         uniform sampler2D tClouds;
+        uniform float cloudsLoaded;
         uniform vec3 sunDirection;
         uniform vec3 emissiveColor;
         uniform float emissiveIntensity;
@@ -331,8 +339,8 @@ export class AtlasGlobe {
           float darkFactor = 1.0 - lightIntensity;
           vec3 nightlights = emissiveMap.rgb * emissiveColor * emissiveIntensity * darkFactor;
           
-          // Add clouds if texture is loaded
-          if (tClouds != null) {
+          // Add clouds if loaded
+          if (cloudsLoaded > 0.5) {
             vec4 cloudMap = texture2D(tClouds, vUv);
             float cloudAmount = cloudMap.a;
             
@@ -372,6 +380,7 @@ export class AtlasGlobe {
     this.loadCloudTexture().then(cloudTexture => {
       if (cloudTexture && this.globeMaterial && this.globeMaterial.uniforms) {
         this.globeMaterial.uniforms.tClouds.value = cloudTexture;
+        this.globeMaterial.uniforms.cloudsLoaded.value = 1.0;
         console.log('Cloud texture loaded and applied');
       }
     }).catch(error => {
