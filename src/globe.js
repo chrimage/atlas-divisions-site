@@ -337,8 +337,8 @@ export class AtlasGlobe {
           vec3 nightlights = emissiveMap.rgb * emissiveColor * emissiveIntensity * darkFactor;
           
           // Add clouds - let lighting handle brightness naturally
-          vec3 cloudColor = vec3(1.0) * (lightIntensity + ambientLight);
-          finalColor += cloudColor * cloudAmount * 0.3;
+          vec3 cloudColor = vec3(1.0) * (lightIntensity + ambientLight * 2.0);
+          finalColor += cloudColor * cloudAmount * 0.8;
           
           // Add nightlights with cloud occlusion
           finalColor += nightlights * (1.0 - cloudAmount * 0.6);
