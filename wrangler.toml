@@ -1,0 +1,27 @@
+route = "https://atlasdivisions.com/*"
+
+name = "atlas-divisions-site-polish-dev"
+main = "./dist/_worker.js/index.js"
+account_id = "289b455192a9eaf0a0d035e2d342944a"
+compatibility_date = "2025-06-28"
+
+[assets]
+binding = "ASSETS"
+directory = "./dist"
+
+[build]
+command = "npm run build"
+
+[observability]
+enabled = false
+
+[vars]
+ENVIRONMENT = "production"
+FROM_EMAIL_NAME = "notify"
+ADMIN_EMAIL = "Harley@atlasdivisions.com"
+MG_DOMAIN = "mg.atlasdivisions.com"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "firebird-intake-db"
+database_id = "2d95737f-6c51-47a6-a53c-f6d23fd1f188"

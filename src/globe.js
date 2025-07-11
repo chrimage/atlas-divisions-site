@@ -2,7 +2,7 @@
  * AtlasGlobe - Interactive 3D Globe with Three.js
  * 
  * A standalone class for creating an interactive 3D globe with city lights,
- * drag controls, momentum physics, and atmospheric effects.
+ * drag controls, momentum physics, atmospheric effects, and fire mapping.
  * 
  * Dependencies:
  * - Three.js (dynamically imported)
@@ -36,11 +36,6 @@ let THREE = null;
  * @property {boolean} features.dragControls - Enable drag controls
  */
 
-/**
- * AtlasGlobe Class
- * 
- * Creates and manages an interactive 3D globe with Three.js
- */
 export class AtlasGlobe {
   /**
    * @param {AtlasGlobeConfig} config - Configuration object
@@ -52,6 +47,7 @@ export class AtlasGlobe {
     this.renderer = null;
     this.globeMesh = null;
     this.cityLightsGroup = null;
+    this.firesGroup = null;
     
     // Interaction properties
     this.isDragging = false;
@@ -80,16 +76,8 @@ export class AtlasGlobe {
     
     // Size configuration based on mode
     this.sizeConfig = this.getSizeConfig();
-    
-    // Don't auto-initialize - wait for explicit init() call
-    // This ensures THREE is properly loaded first
   }
   
-  /**
-   * Merge user config with defaults
-   * @param {AtlasGlobeConfig} userConfig - User configuration
-   * @returns {AtlasGlobeConfig} Merged configuration
-   */
   mergeConfig(userConfig) {
     const defaults = {
       container: '#globe-canvas',
@@ -112,7 +100,6 @@ export class AtlasGlobe {
         dragControls: true
       }
     };
-    
     return {
       container: userConfig.container || defaults.container,
       mode: userConfig.mode || defaults.mode,
@@ -122,11 +109,6 @@ export class AtlasGlobe {
     };
   }
   
-  /**
-   * Resolve container element from string selector or HTMLElement
-   * @param {string|HTMLElement} container - Container selector or element
-   * @returns {HTMLElement|null} Container element
-   */
   resolveContainer(container) {
     if (typeof container === 'string') {
       return document.querySelector(container);
@@ -134,10 +116,6 @@ export class AtlasGlobe {
     return container instanceof HTMLElement ? container : null;
   }
   
-  /**
-   * Get size configuration based on mode
-   * @returns {Object} Size configuration object
-   */
   getSizeConfig() {
     if (this.mode === 'fullscreen') {
       return {
@@ -170,35 +148,23 @@ export class AtlasGlobe {
     }
   }
   
-  /**
-   * Set the THREE.js library reference
-   * @param {Object} threeLibrary - The THREE.js library object
-   */
   setThreeJS(threeLibrary) {
     THREE = threeLibrary;
   }
   
-  /**
-   * Initialize the globe (staggered loading after scene is ready)
-   */
   async init(onLoadingStep) {
-    // Use global THREE if available, otherwise use module-level THREE
     if (!THREE && typeof window !== 'undefined' && window.THREE) {
       THREE = window.THREE;
     }
-    
     if (!THREE) {
       console.error('Three.js not loaded. Use loadThreeJS() first.');
       return;
     }
-    
     if (!this.container) {
       console.error('Container element not found');
       return;
     }
-    
     try {
-      // Create scene, camera, renderer, etc.
       await new Promise(resolve => {
         setTimeout(() => {
           this.createScene();
@@ -206,7 +172,6 @@ export class AtlasGlobe {
         }, 100);
       });
 
-      // Staggered loading after scene is ready
       if (onLoadingStep) onLoadingStep(0); // Globe
       await this.createGlobeBaseOnly();
       if (this.features.atmosphere) {
@@ -216,13 +181,13 @@ export class AtlasGlobe {
       await this.addOWMCloudOverlay();
       if (onLoadingStep) onLoadingStep(2); // City lights
       await this.addCityLights();
-      if (onLoadingStep) onLoadingStep(3); // Ready
+      if (onLoadingStep) onLoadingStep(3); // Fires
+      await this.addFIRMSFires();
+      if (onLoadingStep) onLoadingStep(4); // Ready
 
       if (this.features.dragControls) {
         this.setupEventListeners();
       }
-
-      // Start animation loop ONLY after all layers are loaded
       this.animate();
     } catch (error) {
       console.error('Globe initialization failed:', error);
@@ -230,9 +195,6 @@ export class AtlasGlobe {
     }
   }
   
-  /**
-   * Show error state in container
-   */
   showError() {
     if (this.container) {
       this.container.innerHTML = `
@@ -244,65 +206,37 @@ export class AtlasGlobe {
     }
   }
   
-  /**
-   * Create the Three.js scene (no globe/layers, just scene/camera/renderer)
-   */
   createScene() {
     if (!this.container) return;
-
     const width = this.container.offsetWidth || this.container.clientWidth || 400;
     const height = this.container.offsetHeight || this.container.clientHeight || 400;
-
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-
     this.renderer.setSize(width, height);
     this.renderer.setClearColor(0x000000, 0);
     this.container.appendChild(this.renderer.domElement);
-
-    // Use dynamic camera distance based on mode
     this.camera.position.z = this.sizeConfig.cameraDistance;
-
-    // Only set up lighting and animation loop here
     this.setupLighting();
-    // Do NOT start animation loop here!
   }
   
-  /**
-   * Create the globe base only (scene, camera, renderer, globe group, mesh)
-   * For staggered loading: call this first, then add clouds/lights.
-   */
   async createGlobeBaseOnly() {
-    // Create geometry and texture
     const geometry = new THREE.SphereGeometry(this.sizeConfig.sphereRadius, 64, 64);
     const texture = await this.createAtlasTexture();
-
-    // Create a parent group for all globe elements
     this.globeGroup = new THREE.Group();
     this.scene.add(this.globeGroup);
-
-    // Apply initial Y rotation so 0° longitude faces camera, then axial tilt
-    this.globeGroup.rotation.y = Math.PI; // 180° so 0° longitude is at front
-    this.globeGroup.rotation.x = 0.4102; // 23.5 degrees tilt
-
-    // Globe mesh
+    this.globeGroup.rotation.y = Math.PI;
+    this.globeGroup.rotation.x = 0.4102;
     this.globeMesh = new THREE.Mesh(geometry, texture ? new THREE.MeshPhongMaterial({
       map: texture,
       transparent: false,
       shininess: 1
     }) : undefined);
-    // No per-mesh rotation!
     this.globeGroup.add(this.globeMesh);
-
-    // Initialize with auto-rotation
     this.rotationVelocity.x = 0;
     this.rotationVelocity.y = this.autoRotationSpeed;
   }
 
-  /**
-   * (Legacy) Create the globe mesh with all layers at once
-   */
   async createGlobe() {
     await this.createGlobeBaseOnly();
     if (this.features.atmosphere) {
@@ -312,17 +246,13 @@ export class AtlasGlobe {
       await this.addCityLights();
     }
     await this.addOWMCloudOverlay();
+    await this.addFIRMSFires();
     this.animate();
   }
 
-  /**
-   * Fetch and overlay OpenWeatherMap cloud tiles as a texture
-   */
   async addOWMCloudOverlay() {
-    // Settings
-    const apiKey = "5c40eeabe3fb01c8a4f85b28e754833c";
     const layer = "clouds_new";
-    const z = 1; // Low zoom for global coverage (2x2 tiles)
+    const z = 1;
     const tileSize = 256;
     const canvasSize = tileSize * 2;
     const canvas = document.createElement("canvas");
@@ -330,26 +260,26 @@ export class AtlasGlobe {
     canvas.height = canvasSize;
     const ctx = canvas.getContext("2d");
 
-    // Fetch and draw 2x2 tiles
+    const res = await fetch(`/api/weather?layer=${layer}&z=${z}`);
+    const data = await res.json();
+    if (!data.tiles || !Array.isArray(data.tiles)) {
+      console.error("Failed to load OWM tiles from API proxy");
+      return;
+    }
+
+    let i = 0;
     for (let x = 0; x < 2; x++) {
       for (let y = 0; y < 2; y++) {
-        const url = `https://tile.openweathermap.org/map/${layer}/${z}/${x}/${y}.png?appid=${apiKey}`;
-        await new Promise((resolve) => {
-          const img = new window.Image();
-          img.crossOrigin = "Anonymous";
-          img.onload = () => {
-            ctx.globalAlpha = 1.0; // Fully opaque for debugging
-            ctx.drawImage(img, x * tileSize, y * tileSize, tileSize, tileSize);
-            console.log("Loaded OWM tile:", url);
-            resolve();
-          };
-          img.onerror = resolve;
-          img.src = url;
-        });
+        const img = new window.Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+          ctx.globalAlpha = 1.0;
+          ctx.drawImage(img, x * tileSize, y * tileSize, tileSize, tileSize);
+        };
+        img.src = data.tiles[i++];
       }
     }
 
-    // Create texture and overlay as a new mesh
     const cloudTexture = new THREE.CanvasTexture(canvas);
     cloudTexture.wrapS = THREE.RepeatWrapping;
     cloudTexture.wrapT = THREE.ClampToEdgeWrapping;
@@ -357,7 +287,7 @@ export class AtlasGlobe {
     const cloudMaterial = new THREE.MeshPhongMaterial({
       map: cloudTexture,
       transparent: true,
-      opacity: 1.0, // Fully opaque for debugging
+      opacity: 1.0,
       depthWrite: false
     });
 
@@ -365,13 +295,68 @@ export class AtlasGlobe {
       new THREE.SphereGeometry(this.sizeConfig.sphereRadius + 0.01, 64, 64),
       cloudMaterial
     );
-    // Do NOT set cloudMesh rotation; let it inherit from globeGroup
     this.globeGroup.add(this.cloudMesh);
   }
+
+  async addFIRMSFires() {
+    try {
+      const res = await fetch('/api/fires');
+      if (!res.ok) {
+        console.error('Failed to fetch FIRMS fire data');
+        return;
+      }
+      const data = await res.json();
+      if (!data.fires || !Array.isArray(data.fires)) {
+        console.error('Invalid FIRMS fire data');
+        return;
+      }
+
+      // Remove previous fire markers if any
+      if (this.firesGroup) {
+        this.globeGroup.remove(this.firesGroup);
+      }
+      this.firesGroup = new THREE.Group();
+      this.globeGroup.add(this.firesGroup);
+
+      data.fires.forEach(fire => {
+        const lat = fire.lat;
+        const lon = fire.lon;
+        if (typeof lat !== "number" || typeof lon !== "number") return;
+        // Convert lat/lon to 3D position
+        const phi = (90 - lat) * (Math.PI / 180);
+        const theta = (-lon) * (Math.PI / 180);
+        const radius = this.sizeConfig.sphereRadius + 0.012;
+
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.cos(phi);
+        const z = radius * Math.sin(phi) * Math.sin(theta);
+
+        // Color/size by confidence
+        let color = 0xff4500; // orange-red
+        let size = 0.018;
+        const conf = (fire.confidence || '').toLowerCase();
+        if (conf === 'nominal') color = 0xffa500;
+        if (conf === 'low') color = 0xffff00;
+        if (conf === 'high') { color = 0xff0000; size = 0.025; }
+
+        const geometry = new THREE.SphereGeometry(size, 8, 8);
+        const material = new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: 0.85,
+          blending: THREE.AdditiveBlending
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(x, y, z);
+        this.firesGroup.add(mesh);
+      });
+
+      console.log(`FIRMS fires loaded: ${data.fires.length}`);
+    } catch (err) {
+      console.error('Error loading FIRMS fires:', err);
+    }
+  }
   
-  /**
-   * Create atmospheric layer
-   */
   createAtmosphere() {
     const atmosphereGeometry = new THREE.SphereGeometry(this.sizeConfig.atmosphereRadius, 64, 64);
     const atmosphereMaterial = new THREE.MeshBasicMaterial({
@@ -384,69 +369,46 @@ export class AtlasGlobe {
     this.scene.add(atmosphere);
   }
   
-  /**
-   * Setup lighting system
-   */
   setupLighting() {
     const ambientLight = new THREE.AmbientLight(this.atlasColors.light, 0.35);
     this.scene.add(ambientLight);
-    
     const directionalLight = new THREE.DirectionalLight(this.atlasColors.light, 0.6);
-    
-    // Position light to create realistic day/night terminator
-    const sunLon = -120; // Pacific daylight
+    const sunLon = -120;
     const sunLat = 0;
     const sunPhi = (90 - sunLat) * (Math.PI / 180);
     const sunTheta = (sunLon + 180) * (Math.PI / 180);
-    
     const sunX = 5 * Math.sin(sunPhi) * Math.cos(sunTheta);
     const sunY = 5 * Math.cos(sunPhi);
     const sunZ = 5 * Math.sin(sunPhi) * Math.sin(sunTheta);
-    
     directionalLight.position.set(sunX, sunY, sunZ);
     this.scene.add(directionalLight);
   }
   
-  /**
-   * Create texture with world map and city lights
-   */
   async createAtlasTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = this.sizeConfig.textureSize.width;
     canvas.height = this.sizeConfig.textureSize.height;
     const ctx = canvas.getContext('2d');
     if (!ctx) return new THREE.CanvasTexture(canvas);
-    
     ctx.fillStyle = this.atlasColors.ocean;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
     try {
       const response = await fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson');
       const geoData = await response.json();
       await this.drawWorldMap(ctx, geoData, canvas.width, canvas.height);
     } catch (error) {
-      console.log('Using fallback map');
       this.drawFallbackMap(ctx, canvas.width, canvas.height);
-      // Only draw city lights on texture if 3D lights are disabled
-      // if (this.features.cityLights) {
-      //   await this.drawCityLights(ctx, canvas.width, canvas.height);
-      // }
     }
-    
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;
     return texture;
   }
   
-  /**
-   * Draw world map from GeoJSON data
-   */
   async drawWorldMap(ctx, geoData, width, height) {
     ctx.fillStyle = this.atlasColors.land;
     ctx.strokeStyle = this.atlasColors.stroke;
     ctx.lineWidth = 1;
-    
     geoData.features.forEach((feature) => {
       if (feature.geometry.type === 'Polygon') {
         this.drawPolygon(ctx, feature.geometry.coordinates, width, height);
@@ -456,23 +418,14 @@ export class AtlasGlobe {
         });
       }
     });
-
-    // Only draw city lights on texture if 3D lights are disabled
-    // if (this.features.cityLights) {
-    //   await this.drawCityLights(ctx, width, height);
-    // }
   }
   
-  /**
-   * Draw polygon on canvas
-   */
   drawPolygon(ctx, coordinates, width, height) {
     coordinates.forEach((ring) => {
       ctx.beginPath();
       ring.forEach((coord, index) => {
         const x = ((coord[0] + 180) / 360) * width;
         const y = ((90 - coord[1]) / 180) * height;
-        
         if (index === 0) {
           ctx.moveTo(x, y);
         } else {
@@ -485,19 +438,15 @@ export class AtlasGlobe {
     });
   }
   
-  /**
-   * Draw fallback map with simple continent shapes
-   */
   drawFallbackMap(ctx, width, height) {
     const continents = [
-      { x: 0.2, y: 0.3, w: 0.25, h: 0.4 }, // North America
-      { x: 0.25, y: 0.5, w: 0.15, h: 0.35 }, // South America
-      { x: 0.48, y: 0.25, w: 0.12, h: 0.15 }, // Europe
-      { x: 0.5, y: 0.35, w: 0.15, h: 0.4 }, // Africa
-      { x: 0.6, y: 0.2, w: 0.3, h: 0.35 }, // Asia
-      { x: 0.75, y: 0.65, w: 0.12, h: 0.1 } // Australia
+      { x: 0.2, y: 0.3, w: 0.25, h: 0.4 },
+      { x: 0.25, y: 0.5, w: 0.15, h: 0.35 },
+      { x: 0.48, y: 0.25, w: 0.12, h: 0.15 },
+      { x: 0.5, y: 0.35, w: 0.15, h: 0.4 },
+      { x: 0.6, y: 0.2, w: 0.3, h: 0.35 },
+      { x: 0.75, y: 0.65, w: 0.12, h: 0.1 }
     ];
-    
     ctx.fillStyle = this.atlasColors.land;
     continents.forEach(continent => {
       ctx.fillRect(
@@ -509,55 +458,36 @@ export class AtlasGlobe {
     });
   }
   
-  /**
-   * Add 3D city lights from CSV data
-   */
   async addCityLights() {
     try {
       const csvRes = await fetch('/js/world-cities.csv');
       if (!csvRes.ok) return;
       const csvText = await csvRes.text();
       const lines = csvText.split('\n').slice(1);
-      
-    this.cityLightsGroup = new THREE.Group();
-    // Do NOT set cityLightsGroup rotation; let it inherit from globeGroup
-    this.globeGroup.add(this.cityLightsGroup);
-      
+      this.cityLightsGroup = new THREE.Group();
+      this.globeGroup.add(this.cityLightsGroup);
       const allCities = [];
-      
       lines.forEach(line => {
         const parts = line.split(',');
         if (parts.length < 10) return;
-        
         const lat = parseFloat(parts[2].replace(/"/g, ''));
         const lon = parseFloat(parts[3].replace(/"/g, ''));
         const population = parseInt(parts[9].replace(/"/g, ''), 10);
         const country = parts[4].replace(/"/g, '');
-        
-if (isNaN(lat) || isNaN(lon) || isNaN(population) || population < 1000) return;
-
-// Convert coordinates to 3D position
-const phi = (90 - lat) * (Math.PI / 180);
-const theta = (-lon) * (Math.PI / 180);
-// Move city lights halfway into the globe for "grounded" effect
-const radius = this.sizeConfig.sphereRadius - 0.01;
-        
+        if (isNaN(lat) || isNaN(lon) || isNaN(population) || population < 1000) return;
+        const phi = (90 - lat) * (Math.PI / 180);
+        const theta = (-lon) * (Math.PI / 180);
+        const radius = this.sizeConfig.sphereRadius - 0.01;
         const x = radius * Math.sin(phi) * Math.cos(theta);
         const y = radius * Math.cos(phi);
         const z = radius * Math.sin(phi) * Math.sin(theta);
-        
-        // Calculate size and intensity based on population
-const minPop = 1000;
-const maxPop = 38000000;
-const popNormalized = Math.min(1, Math.max(0, (Math.log10(population) - Math.log10(minPop)) / (Math.log10(maxPop) - Math.log10(minPop))));
-
-// Make the minimum size and intensity lower for small cities
-const minIntensity = 0.15;
-const minSize = 0.002;
-const size = minSize + popNormalized * this.sizeConfig.cityLightSize.multiplier;
-const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
-        
-        // Determine light color based on region
+        const minPop = 1000;
+        const maxPop = 38000000;
+        const popNormalized = Math.min(1, Math.max(0, (Math.log10(population) - Math.log10(minPop)) / (Math.log10(maxPop) - Math.log10(minPop))));
+        const minIntensity = 0.15;
+        const minSize = 0.002;
+        const size = minSize + popNormalized * this.sizeConfig.cityLightSize.multiplier;
+        const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
         let lightColor = 0xffffff;
         if (country === 'China' || country === 'India') {
           lightColor = 0xfff8e1;
@@ -568,10 +498,8 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
         } else if (country === 'Brazil' || country === 'Argentina' || country === 'Chile') {
           lightColor = 0xfff5dc;
         }
-        
         allCities.push({ x, y, z, population, color: lightColor, name: parts[0], size, intensity });
       });
-      
       this.createIndividualCityLights(allCities);
       console.log(`City lights optimized: ${allCities.length} cities with population-based scaling`);
     } catch (err) {
@@ -579,12 +507,8 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
     }
   }
   
-  /**
-   * Create individual city light meshes
-   */
   createIndividualCityLights(cities) {
     if (cities.length === 0) return;
-    
     cities.forEach(city => {
       const geometry = new THREE.SphereGeometry(city.size, 8, 8);
       const material = new THREE.MeshBasicMaterial({
@@ -593,108 +517,23 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
         blending: THREE.AdditiveBlending,
         color: city.color
       });
-      
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(city.x, city.y, city.z);
       this.cityLightsGroup.add(mesh);
     });
   }
   
-  /**
-   * Draw city lights on texture canvas
-   */
-  async drawCityLights(ctx, width, height) {
-    try {
-      const csvRes = await fetch('/js/world-cities.csv');
-      if (!csvRes.ok) throw new Error('Failed to load city lights CSV: ' + csvRes.status);
-      const csvText = await csvRes.text();
-      const lines = csvText.split('\n').slice(1);
-      
-      ctx.save();
-      ctx.globalAlpha = 0.9;
-      let cityCount = 0;
-      
-      lines.forEach(line => {
-        const parts = line.split(',');
-        if (parts.length < 10) return;
-        
-        const lat = parseFloat(parts[2].replace(/"/g, ''));
-        const lon = parseFloat(parts[3].replace(/"/g, ''));
-        const population = parseInt(parts[9].replace(/"/g, ''), 10);
-        const country = parts[4].replace(/"/g, '');
-        
-        if (isNaN(lat) || isNaN(lon) || isNaN(population) || population <= 0) return;
-        
-        const x = ((lon + 180) / 360) * width;
-        const y = ((90 - lat) / 180) * height;
-        
-        const maxPop = 40000000;
-        const minRadius = 0.5;
-        const maxRadius = 5;
-        const r = minRadius + (Math.log10(population) / Math.log10(maxPop)) * (maxRadius - minRadius);
-
-        // Color variations based on region
-        let centerColor = 'rgba(255, 255, 255, 1)';
-        let midColor = 'rgba(255, 255, 255, 0.9)';
-        let edgeColor = 'rgba(200, 220, 255, 0)';
-        
-        if (country === 'China' || country === 'India') {
-          centerColor = 'rgba(255, 248, 220, 1)';
-          midColor = 'rgba(255, 248, 220, 0.9)';
-        } else if (country === 'United States' || country === 'United Kingdom' || country === 'Japan') {
-          centerColor = 'rgba(240, 248, 255, 1)';
-          midColor = 'rgba(240, 248, 255, 0.9)';
-        } else if (country === 'Nigeria' || country === 'Pakistan' || country === 'Bangladesh') {
-          centerColor = 'rgba(255, 165, 0, 1)';
-          midColor = 'rgba(255, 165, 0, 0.9)';
-          edgeColor = 'rgba(255, 140, 0, 0)';
-        } else if (country === 'Brazil' || country === 'Argentina' || country === 'Chile') {
-          centerColor = 'rgba(255, 245, 220, 1)';
-          midColor = 'rgba(255, 245, 220, 0.9)';
-        }
-        
-        const grad = ctx.createRadialGradient(x, y, 0, x, y, r * 1.2);
-        grad.addColorStop(0, centerColor);
-        grad.addColorStop(0.1, midColor);
-        grad.addColorStop(0.2, edgeColor);
-        grad.addColorStop(1, 'rgba(100, 150, 255, 0)');
-        
-        ctx.beginPath();
-        ctx.arc(x, y, r * 1.2, 0, 2 * Math.PI);
-        ctx.fillStyle = grad;
-        ctx.fill();
-        cityCount++;
-      });
-      
-      ctx.restore();
-      console.log('City lights drawn:', cityCount);
-    } catch (err) {
-      console.error('City lights error:', err);
-    }
-  }
-  
-  /**
-   * Setup event listeners for drag controls
-   */
   setupEventListeners() {
     if (!this.container) return;
-    
     this.container.style.cursor = 'grab';
-    
-    // Mouse events
     this.container.addEventListener('mousedown', this.onMouseDown.bind(this));
     this.container.addEventListener('mousemove', this.onMouseMove.bind(this));
     this.container.addEventListener('mouseup', this.onMouseUp.bind(this));
     this.container.addEventListener('mouseleave', this.onMouseLeave.bind(this));
-    
-    // Touch events
     this.container.addEventListener('touchstart', this.onTouchStart.bind(this));
     this.container.addEventListener('touchmove', this.onTouchMove.bind(this));
     this.container.addEventListener('touchend', this.onTouchEnd.bind(this));
-    
-    // Resize handling
     window.addEventListener('resize', this.onWindowResize.bind(this));
-    
     if (window.ResizeObserver) {
       const resizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
@@ -707,42 +546,23 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
     }
   }
   
-  /**
-   * Mouse down event handler
-   */
   onMouseDown(event) {
     this.startDragging(event.clientX, event.clientY);
     if (this.container) this.container.style.cursor = 'grabbing';
   }
-  
-  /**
-   * Mouse move event handler
-   */
   onMouseMove(event) {
     if (this.isDragging) {
       this.updateRotation(event.clientX, event.clientY);
     }
   }
-  
-  /**
-   * Mouse up event handler
-   */
   onMouseUp() {
     this.stopDragging();
     if (this.container) this.container.style.cursor = 'grab';
   }
-  
-  /**
-   * Mouse leave event handler
-   */
   onMouseLeave() {
     this.stopDragging();
     if (this.container) this.container.style.cursor = 'grab';
   }
-  
-  /**
-   * Touch start event handler
-   */
   onTouchStart(event) {
     event.preventDefault();
     if (event.touches.length === 1) {
@@ -750,10 +570,6 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
       this.startDragging(touch.clientX, touch.clientY);
     }
   }
-  
-  /**
-   * Touch move event handler
-   */
   onTouchMove(event) {
     event.preventDefault();
     if (this.isDragging && event.touches.length === 1) {
@@ -761,18 +577,10 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
       this.updateRotation(touch.clientX, touch.clientY);
     }
   }
-  
-  /**
-   * Touch end event handler
-   */
   onTouchEnd(event) {
     event.preventDefault();
     this.stopDragging();
   }
-  
-  /**
-   * Start dragging interaction
-   */
   startDragging(clientX, clientY) {
     this.isDragging = true;
     if (!this.container) return;
@@ -782,10 +590,6 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
       y: clientY - rect.top
     };
   }
-  
-  /**
-   * Update rotation based on mouse/touch movement
-   */
   updateRotation(clientX, clientY) {
     if (!this.container) return;
     const rect = this.container.getBoundingClientRect();
@@ -793,45 +597,25 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
       x: clientX - rect.left,
       y: clientY - rect.top
     };
-    
     const deltaX = currentMousePosition.x - this.previousMousePosition.x;
-    
-    // Only allow Y-axis rotation (horizontal dragging)
     this.rotationVelocity.x = 0;
     this.rotationVelocity.y = deltaX * this.rotationSpeed;
-    
     this.previousMousePosition = currentMousePosition;
   }
-  
-  /**
-   * Stop dragging interaction
-   */
   stopDragging() {
     this.isDragging = false;
   }
-  
-  /**
-   * Handle window resize
-   */
   onWindowResize() {
     if (!this.container || !this.renderer || !this.camera) return;
-    
     const width = this.container.offsetWidth || this.container.clientWidth;
     const height = this.container.offsetHeight || this.container.clientHeight;
-    
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
   }
-  
-  /**
-   * Animation loop
-   */
   animate() {
     requestAnimationFrame(this.animate.bind(this));
-    
     if (this.globeGroup) {
-      // Only spin around Y axis (Earth's axis), never touch X after initial tilt
       if (this.isDragging) {
         this.globeGroup.rotation.y += this.rotationVelocity.y;
       } else {
@@ -847,35 +631,21 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
     this.renderer.render(this.scene, this.camera);
     this.renderer.render(this.scene, this.camera);
   }
-  
-  /**
-   * Rotate the globe freely in 3D by Phoenix drag (dx, dy in pixels)
-   */
   rotateGlobeByPhoenix(dx, dy) {
     if (!this.globeGroup) return;
-    // Sensitivity factor (tweak as needed)
     const sensitivity = 0.005;
-    // Only allow rotation around Y axis (realistic Earth spin)
     this.globeGroup.rotation.y += dx * sensitivity;
-    // Optionally, ignore dy or use it for a subtle "nod" effect if desired, but not for real Earth
   }
-
-  /**
-   * Animate the globe back to default orientation (Earth tilt, north up)
-   */
   snapBackGlobeOrientation() {
     if (!this.globeGroup) return;
-    // Only snap Y axis, X stays at 23.5 deg tilt
     const targetY = this.globeGroup.rotation.y;
     const startY = this.globeGroup.rotation.y;
-    const duration = 0.7; // seconds
+    const duration = 0.7;
     const startTime = performance.now();
-
     const animateSnap = (now) => {
       const t = Math.min(1, (now - startTime) / (duration * 1000));
-      // Ease out cubic
       const ease = 1 - Math.pow(1 - t, 3);
-      this.globeGroup.rotation.x = 0.4102; // Always reset to tilt
+      this.globeGroup.rotation.x = 0.4102;
       this.globeGroup.rotation.y = startY + (targetY - startY) * ease;
       if (t < 1) {
         requestAnimationFrame(animateSnap);
@@ -883,10 +653,6 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
     };
     requestAnimationFrame(animateSnap);
   }
-
-  /**
-   * Clean up Three.js resources
-   */
   dispose() {
     if (this.renderer) {
       this.renderer.dispose();
@@ -897,8 +663,6 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
     if (this.scene) {
       this.scene.clear();
     }
-    
-    // Remove event listeners
     if (this.container && this.features.dragControls) {
       this.container.removeEventListener('mousedown', this.onMouseDown);
       this.container.removeEventListener('mousemove', this.onMouseMove);
@@ -911,80 +675,8 @@ const intensity = Math.max(minIntensity, 0.15 + popNormalized * 0.45);
   }
 }
 
-/**
- * Load Three.js library dynamically
- * @returns {Promise<boolean>} Success status
- */
-export async function loadThreeJS() {
-  try {
-    const threeModule = await import('three');
-    THREE = threeModule;
-    return true;
-  } catch (error) {
-    console.error('Failed to load Three.js:', error);
-    return false;
-  }
-}
-
-/**
- * Initialize globe with default settings
- * @param {string|HTMLElement} container - Container element
- * @param {AtlasGlobeConfig} config - Configuration object
- * @returns {Promise<AtlasGlobe|null>} Globe instance or null if failed
- */
-export async function initializeGlobe(container = '#globe-canvas', config = {}) {
-  // Check for reduced motion preference
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  
-  const containerElement = typeof container === 'string' ? 
-    document.querySelector(container) : container;
-  
-  if (!containerElement) {
-    console.error('Container element not found');
-    return null;
-  }
-  
-  if (prefersReducedMotion) {
-    // Show static globe for users who prefer reduced motion
-    containerElement.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#d4af37;font-size:8rem;">🌍</div>';
-    return null;
-  }
-  
-  // Load Three.js if not already loaded
-  if (!THREE) {
-    const threeLoaded = await loadThreeJS();
-    if (!threeLoaded) {
-      // Fallback to static globe
-      containerElement.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#d4af37;font-size:8rem;">🌍</div>';
-      return null;
-    }
-  }
-  
-  try {
-    const globe = new AtlasGlobe({ container, ...config });
-    await globe.init();
-    return globe;
-  } catch (error) {
-    console.error('Globe initialization failed:', error);
-    containerElement.innerHTML = `
-      <div class="globe-error">
-        <div class="error-icon">🌍</div>
-        <p>Globe unavailable</p>
-      </div>
-    `;
-    return null;
-  }
-}
-
-/**
- * Clean up globe instance
- * @param {AtlasGlobe} globe - Globe instance to clean up
- */
-export function cleanupGlobe(globe) {
-  if (globe) {
-    globe.dispose();
-  }
-}
+// Export AtlasGlobe as default for compatibility with dynamic import
+export default AtlasGlobe;
 
 // Export THREE for external use (after loading)
 export { THREE };
