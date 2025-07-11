@@ -261,24 +261,99 @@ export class AtlasGlobe {
   async createGlobe() {
     const geometry = new THREE.SphereGeometry(this.sizeConfig.sphereRadius, 64, 64);
     
-    // Load both textures - black marble for main surface, custom lightmap for emissive
-    const [blackMarbleTexture, customLightmap] = await Promise.all([
+    // Load all textures - main surface, lightmap, and cloud map
+    const [blackMarbleTexture, customLightmap, cloudTexture] = await Promise.all([
       this.loadBlackMarbleTexture(),
-      this.loadCinzanoLightmap()
+      this.loadCinzanoLightmap(),
+      this.loadCloudTexture()
     ]);
     
-    const material = new THREE.MeshPhongMaterial({
-      map: blackMarbleTexture,              // Main texture shows night lights colors
-      emissiveMap: customLightmap,          // Your custom lightmap controls glow
-      emissive: new THREE.Color(0xffcc00),  // Gold glow to match site theme
-      emissiveIntensity: 0.3,               // Moderate intensity
-      transparent: false,
-      shininess: 1
+    // Create custom shader material for cloud occlusion effect
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        // Day/night textures
+        tDiffuse: { value: blackMarbleTexture },
+        tEmissive: { value: customLightmap },
+        tClouds: { value: cloudTexture },
+        
+        // Lighting - fixed sun position in world space
+        sunDirection: { value: new THREE.Vector3(0, 0, -1) },
+        
+        // Material properties
+        emissiveColor: { value: new THREE.Color(0xffcc00) },
+        emissiveIntensity: { value: 0.6 },
+        ambientLight: { value: 0.05 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vWorldNormal;
+        varying vec3 vPosition;
+        varying vec3 vWorldPosition;
+        
+        void main() {
+          vUv = uv;
+          vNormal = normalize(normalMatrix * normal);
+          vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+          vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+          vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform sampler2D tEmissive;
+        uniform sampler2D tClouds;
+        uniform vec3 sunDirection;
+        uniform vec3 emissiveColor;
+        uniform float emissiveIntensity;
+        uniform float ambientLight;
+        
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vWorldNormal;
+        varying vec3 vPosition;
+        varying vec3 vWorldPosition;
+        
+        void main() {
+          // Sample textures
+          vec4 diffuseColor = texture2D(tDiffuse, vUv);
+          vec4 emissiveMap = texture2D(tEmissive, vUv);
+          vec4 cloudMap = texture2D(tClouds, vUv);
+          
+          // Calculate lighting from sun direction using world-space normals
+          vec3 lightDirection = normalize(sunDirection);
+          float lightIntensity = max(dot(normalize(vWorldNormal), lightDirection), 0.0);
+          
+          // Apply diffuse lighting with ambient light
+          vec3 diffuse = diffuseColor.rgb * (lightIntensity + ambientLight);
+          
+          // Apply cloud layer with proper day/night behavior
+          float cloudAmount = cloudMap.a;
+          vec3 finalColor = diffuse;
+          
+          // Add nightlights in dark areas
+          float darkFactor = 1.0 - lightIntensity;
+          vec3 nightlights = emissiveMap.rgb * emissiveColor * emissiveIntensity * darkFactor;
+          
+          // Add clouds - let lighting handle brightness naturally
+          vec3 cloudColor = vec3(1.0) * (lightIntensity + ambientLight);
+          finalColor += cloudColor * cloudAmount * 0.3;
+          
+          // Add nightlights with cloud occlusion
+          finalColor += nightlights * (1.0 - cloudAmount * 0.6);
+          
+          gl_FragColor = vec4(finalColor, 1.0);
+        }
+      `
     });
     
     this.globeMesh = new THREE.Mesh(geometry, material);
     this.globeMesh.rotation.x = 0.1; // Slight tilt
     this.scene.add(this.globeMesh);
+    
+    // Store reference to material for lighting updates
+    this.globeMaterial = material;
     
     if (this.features.atmosphere) {
       this.createAtmosphere();
@@ -298,7 +373,7 @@ export class AtlasGlobe {
       const textureLoader = new THREE.TextureLoader();
       const texture = await new Promise((resolve, reject) => {
         textureLoader.load(
-          'https://clouds.matteason.co.uk/images/2048x1024/earth.jpg',
+          '/land_ocean_ice_2048.png',
           resolve,
           undefined,
           reject
@@ -326,7 +401,7 @@ export class AtlasGlobe {
       const textureLoader = new THREE.TextureLoader();
       const texture = await new Promise((resolve, reject) => {
         textureLoader.load(
-          '/js/earth_lightmap.png',
+          '/nightlights.png',
           resolve,
           undefined,
           reject
@@ -342,6 +417,35 @@ export class AtlasGlobe {
       return texture;
     } catch (error) {
       console.warn('Failed to load Earth lightmap:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Load cloud texture with alpha transparency
+   */
+  async loadCloudTexture() {
+    try {
+      const textureLoader = new THREE.TextureLoader();
+      const texture = await new Promise((resolve, reject) => {
+        textureLoader.load(
+          'https://clouds.matteason.co.uk/images/2048x1024/clouds-alpha.png',
+          resolve,
+          undefined,
+          reject
+        );
+      });
+      
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      
+      console.log('Cloud texture loaded successfully', texture);
+      console.log('Cloud texture dimensions:', texture.image.width, 'x', texture.image.height);
+      return texture;
+    } catch (error) {
+      console.warn('Failed to load cloud texture:', error);
       return null;
     }
   }
@@ -388,6 +492,11 @@ export class AtlasGlobe {
     
     this.scene.add(directionalLight);
     this.scene.add(directionalLight.target);
+    
+    // Update custom shader with fixed sun direction
+    if (this.globeMaterial && this.globeMaterial.uniforms) {
+      this.globeMaterial.uniforms.sunDirection.value = new THREE.Vector3(0, 0, -1);
+    }
     
     console.log('Pure directional lighting: Sun behind Earth, no ambient light');
   }
@@ -517,9 +626,9 @@ export class AtlasGlobe {
     const deltaX = currentMousePosition.x - this.previousMousePosition.x;
     const deltaY = currentMousePosition.y - this.previousMousePosition.y;
     
-    // Update camera orbit velocities
+    // Update camera orbit velocities (locked to equator - horizontal only)
     this.cameraOrbitVelocity.y = deltaX * this.rotationSpeed; // Horizontal orbit
-    this.cameraOrbitVelocity.x = deltaY * this.rotationSpeed; // Vertical orbit
+    this.cameraOrbitVelocity.x = 0; // Vertical orbit locked
     
     this.previousMousePosition = currentMousePosition;
   }
@@ -553,12 +662,10 @@ export class AtlasGlobe {
     
     if (this.camera) {
       if (this.isDragging) {
-        // Direct camera orbit while dragging
+        // Direct camera orbit while dragging (horizontal only - locked to equator)
         this.cameraTheta += this.cameraOrbitVelocity.y;
-        this.cameraPhi += this.cameraOrbitVelocity.x;
-        
-        // Clamp vertical angle to prevent camera from going through poles
-        this.cameraPhi = Math.max(0.1, Math.min(Math.PI - 0.1, this.cameraPhi));
+        // Keep cameraPhi locked at equator level
+        this.cameraPhi = Math.PI / 2;
         
         this.updateCameraPosition();
       } else {
@@ -566,13 +673,11 @@ export class AtlasGlobe {
         this.cameraOrbitVelocity.y *= this.friction;
         this.cameraOrbitVelocity.x *= this.friction;
         
-        // Continue momentum or return to auto-orbit
-        if (Math.abs(this.cameraOrbitVelocity.y) > 0.001 || Math.abs(this.cameraOrbitVelocity.x) > 0.001) {
+        // Continue momentum (horizontal only - locked to equator)
+        if (Math.abs(this.cameraOrbitVelocity.y) > 0.001) {
           this.cameraTheta += this.cameraOrbitVelocity.y;
-          this.cameraPhi += this.cameraOrbitVelocity.x;
-          
-          // Clamp vertical angle
-          this.cameraPhi = Math.max(0.1, Math.min(Math.PI - 0.1, this.cameraPhi));
+          // Keep cameraPhi locked at equator level
+          this.cameraPhi = Math.PI / 2;
           
           this.updateCameraPosition();
         } else {
