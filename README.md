@@ -1,6 +1,6 @@
 # Atlas Divisions Landing Page
 
-A professional website for Captain Harley Miller's adaptive solutions company, featuring an interactive Three.js globe animation and modern responsive design.
+A professional website for Captain Harley's adaptive solutions company, featuring an interactive Three.js globe animation and modern responsive design.
 
 ![Atlas Divisions](https://img.shields.io/badge/Atlas-Divisions-gold?style=for-the-badge)
 ![Astro](https://img.shields.io/badge/Astro-5.9.3-orange?style=for-the-badge&logo=astro)
@@ -209,7 +209,7 @@ The site is fully responsive with optimized layouts for:
 - **Tagline**: "Mapping Chaos. Building Resilience."
 - **Mission**: Adaptive solutions through real-world skills, practical resilience, and AI transparency
 - **Approach**: "No fluff, no nonsense" - practical, transparent, adaptive solutions
-- **Founder**: Captain Harley Miller
+- **Founder**: Captain Harley
 
 ## 📊 Performance
 
